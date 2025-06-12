@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Mediconnect</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="css-curve-bg"></div>
+    <div class="curve-title">mediconnect</div>
+    <div class="container">
+        <div class="form-container">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="chemist-signup">Chemist</button>
+                <button class="tab-btn" data-tab="doctor-signup">Doctor</button>
+            </div>
+            <div class="form-content">
+                <!-- Chemist Sign Up Form -->
+                <form id="chemist-signup-form" class="form active">
+                    <h2>Chemist Sign Up</h2>
+                    <div class="form-group">
+                        <input type="text" id="shop-name" required>
+                        <label for="shop-name">Shop Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="chemist-name" required>
+                        <label for="chemist-name">Chemist Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="chemist-username-signup" required>
+                        <label for="chemist-username-signup">Username</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="chemist-password-signup" required>
+                        <label for="chemist-password-signup">Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                    <p class="switch-form">Already have an account? <a href="index.html">Sign In</a></p>
+                </form>
+                <!-- Doctor Sign Up Form -->
+                <form id="doctor-signup-form" class="form">
+                    <h2>Doctor Sign Up</h2>
+                    <div class="form-group">
+                        <input type="text" id="hospital-name" required>
+                        <label for="hospital-name">Hospital Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="doctor-name" required>
+                        <label for="doctor-name">Doctor Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="doctor-email-signup" required>
+                        <label for="doctor-email-signup">Doctor Email</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="field-name" required>
+                        <label for="field-name">Field Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="doctor-password-signup" required>
+                        <label for="doctor-password-signup">Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                    <p class="switch-form">Already have an account? <a href="index.html">Sign In</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

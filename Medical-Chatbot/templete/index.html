@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AskMediBot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #383881ed);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .background-art {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 0;
+    }
+
+    .chat-ui {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .chat-header {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.4);
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #DFD0B8#948979#393E46#222831;
+      border-radius: 15px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 15px;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 12px 16px;
+      max-width: 70%;
+      border-radius: 18px;
+      line-height: 1.5;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .message.user {
+      background: #1703f4;
+      align-self: flex-end;
+      color: white;
+    }
+
+    .message.bot {
+      background: #ffffff;
+      color: #333;
+      align-self: flex-start;
+      border: 1px solid #e0e0e0;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-form input {
+      flex: 1;
+      padding: 14px 18px;
+      border: none;
+      border-radius: 999px;
+      outline: none;
+      background:#342056;
+      font-size: 1rem;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-form button {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(to right,#D27685#9E4784);
+      color: rgb(126, 76, 110);
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .chat-form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    @media screen and (max-width: 600px) {
+      .chat-box {
+        padding: 10px;
+      }
+
+      .chat-form input {
+        padding: 10px 14px;
+      }
+
+      .chat-form button {
+        padding: 10px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Decorative SVG Background -->
+  <svg class="background-art" viewBox="0 0 1440 320"><path fill="#ffffff30" fill-opacity="1" d="M0,256L40,240C80,224,160,192,240,192C320,192,400,224,480,218.7C560,213,640,171,720,149.3C800,128,880,128,960,133.3C1040,139,1120,149,1200,170.7C1280,192,1360,224,1400,240L1440,256L1440,0L1400,0C1360,0,1280,0,1200,0C1120,0,1040,0,960,0C880,0,800,0,720,0C640,0,560,0,480,0C400,0,320,0,240,0C160,0,80,0,40,0L0,0Z"></path></svg>
+
+  <!-- Chat UI -->
+  <div class="chat-ui">
+    <div class="chat-header" style="color: #16003B;">💬 AskMediBot</div>
+    <div class="chat-box" id="chat-box"></div>
+    <form method="post" class="chat-form" id="chat-form">
+      <input type="text"color="white" name="msg" id="user-input" placeholder="Ask your medical query..." required />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Chat Script -->
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("user-input");
+    const chatBox = document.getElementById("chat-box");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      appendMessage("You", userText, "user");
+      input.value = "";
+      appendMessage("MediBot", "Typing...", "bot");
+
+      try {
+        const res = await fetch(`/get?msg=${encodeURIComponent(userText)}`);
+        const data = await res.text();
+        chatBox.lastChild.remove(); // remove 'typing...'
+        appendMessage("MediBot", data, "bot");
+      } catch {
+        chatBox.lastChild.remove();
+        appendMessage("MediBot", "⚠️ Error fetching response.", "bot");
+      }
+    });
+
+    function appendMessage(sender, text, role) {
+      const msg = document.createElement("div");
+      msg.className = `message ${role}`;
+      msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

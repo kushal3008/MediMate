@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: Generative-AI
+Version: 0.0.0
+Author: Nisarg
+Author-email: nisargpatel2704@gmail.com
+License-File: LICENSE
+Dynamic: author
+Dynamic: author-email
+Dynamic: license-file
