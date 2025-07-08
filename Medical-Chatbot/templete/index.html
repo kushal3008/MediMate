@@ -113,6 +113,27 @@
       box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
     }
 
+    .login-btn {
+      position: absolute;
+      top: 24px;
+      right: 32px;
+      padding: 10px 28px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(to right,#D27685,#9E4784);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      transition: 0.3s ease;
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
     @media screen and (max-width: 600px) {
       .chat-box {
         padding: 10px;
@@ -129,6 +150,8 @@
   </style>
 </head>
 <body>
+
+  <button class="login-btn">Login</button>
 
   <!-- Decorative SVG Background -->
   <svg class="background-art" viewBox="0 0 1440 320"><path fill="#ffffff30" fill-opacity="1" d="M0,256L40,240C80,224,160,192,240,192C320,192,400,224,480,218.7C560,213,640,171,720,149.3C800,128,880,128,960,133.3C1040,139,1120,149,1200,170.7C1280,192,1360,224,1400,240L1440,256L1440,0L1400,0C1360,0,1280,0,1200,0C1120,0,1040,0,960,0C880,0,800,0,720,0C640,0,560,0,480,0C400,0,320,0,240,0C160,0,80,0,40,0L0,0Z"></path></svg>

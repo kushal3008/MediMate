@@ -13,6 +13,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetForm) {
                 targetForm.classList.add('active');
             }
+            // Clear all input fields in both forms
+            forms.forEach(form => {
+                const inputs = form.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+            });
         });
     });
 

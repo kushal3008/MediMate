@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome - MediConnect</title>
-    <link rel="stylesheet" href="styles.css">
+{% extends "base.html "%}
+{% block title %}MediMate{% endblock %}
+
+
+{% block content %}
     <style>
         .homepage-container {
             min-height: 100vh;
@@ -306,17 +304,15 @@
             }
         }
     </style>
-</head>
-<body>
     <div class="css-curve-bg"></div>
     
     <div class="homepage-container">
         <div class="welcome-content">
-            <h1 class="app-title">MediConnect</h1>
+            <h1 class="app-title">MediMate</h1>
             <p class="app-subtitle">Bridging Healthcare Professionals and Pharmacies</p>
             
             <p class="intro-text">
-                Welcome to MediConnect, the innovative platform that seamlessly connects doctors and chemists 
+                Welcome to MediMate, the innovative platform that seamlessly connects doctors and chemists 
                 to streamline the prescription and medication delivery process. Our mission is to enhance 
                 healthcare efficiency and improve patient care through digital collaboration.
             </p>
@@ -351,10 +347,9 @@
             </div>
             
             <div class="cta-buttons">
-                <a href="signup.html" class="cta-btn primary">Get Started</a>
-                <a href="index.html" class="cta-btn secondary">Sign In</a>
+                <a href="{{ url_for('signup') }}" class="cta-btn primary">Get Started</a>
+                <a href="{{ url_for('login') }}" class="cta-btn secondary">Login</a>
             </div>
         </div>
     </div>
-</body>
-</html> 
+{% endblock %}
