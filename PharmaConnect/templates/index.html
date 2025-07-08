@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Mediconnect</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="css-curve-bg"></div>
+    <div class="curve-title">Mediconnect</div>
+    <div class="container">
+        <div class="form-container">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="chemist">Chemist</button>
+                <button class="tab-btn" data-tab="doctor">Doctor</button>
+            </div>
+            <div class="form-content">
+                <!-- Chemist Sign In Form -->
+                <form id="chemist-form" class="form active">
+                    <h2>Chemist Sign In</h2>
+                    <div class="form-group">
+                        <input type="text" id="chemist-username" required>
+                        <label for="chemist-username">Username</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="chemist-password" required>
+                        <label for="chemist-password">Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign In</button>
+                    <p class="switch-form">Don't have an account? <a href="signup.html">Sign Up</a></p>
+                </form>
+                <!-- Doctor Sign In Form -->
+                <form id="doctor-form" class="form">
+                    <h2>Doctor Sign In</h2>
+                    <div class="form-group">
+                        <input type="email" id="doctor-email" required>
+                        <label for="doctor-email">Email</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="doctor-password" required>
+                        <label for="doctor-password">Password</label>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign In</button>
+                    <p class="switch-form">Don't have an account? <a href="signup.html">Sign Up</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
