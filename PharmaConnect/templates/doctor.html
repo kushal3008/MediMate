@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Mediconnect</title>
-    <link rel="stylesheet" href="styles.css">
+{% extends 'base.html '%}
+
+{% block title%}Doctor Dashboard{% endblock %}
+
+{% block content %}
     <style>
         body {
             background: var(--color-5);
@@ -556,13 +554,14 @@
 </head>
 <body>
     <aside class="sidebar">
-        <h2>Doctor</h2>
+        <h2>Hello, {{ current_user.doctorName }}</h2>
         <nav>
             <a href="#dashboard" class="active" onclick="showSection(event, 'dashboard')">Dashboard</a>
             <a href="#patients" onclick="showSection(event, 'patients')">Patients</a>
             <a href="#appointments" onclick="showSection(event, 'appointments')">Appointments</a>
             <a href="#nearby-chemists" onclick="showSection(event, 'nearby-chemists')">Nearby Chemists</a>
             <a href="#profile" onclick="showSection(event, 'profile')">Profile</a>
+            <a href="/logout" style="border-top: 1px solid var(--color-3); margin-top: 30px; padding-top: 16px;">Logout</a>
         </nav>
     </aside>
     <main class="main-content">
@@ -1349,5 +1348,4 @@
             closePrescriptionModal();
         }
     </script>
-</body>
-</html> 
+{% endblock %}
