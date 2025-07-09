@@ -17,7 +17,7 @@ def register_routes(app,db,bcrypt):
             if user_type == "chemist":
                 shopname = request.form.get('shopname')
                 chemistName = request.form.get('chemistname')
-                chemistEmail = request.form.get('chemistemail')
+                chemistEmail = request.form.get('chemistemail').lower()
                 unhash_cpassword = request.form.get('chemistpassword')
 
                 password = bcrypt.generate_password_hash(unhash_cpassword)
@@ -31,7 +31,7 @@ def register_routes(app,db,bcrypt):
             elif user_type == "doctor":
                 hospitalname = request.form.get('hospitalname')
                 doctorName = request.form.get('doctorname')
-                doctorEmail = request.form.get('doctoremail')
+                doctorEmail = request.form.get('doctoremail').lower()
                 unhash_dpassword = request.form.get('doctorpassword')
 
                 password = bcrypt.generate_password_hash(unhash_dpassword)
@@ -55,7 +55,7 @@ def register_routes(app,db,bcrypt):
             user_type = request.form.get('user_type')
 
             if user_type == "chemist":
-                chemistEmail = request.form.get('chemist_email')
+                chemistEmail = request.form.get('chemist_email').lower()
                 cpassword = request.form.get('chemist_password')
 
                 chemist = Chemist.query.filter(Chemist.chemistEmail == chemistEmail).first()
@@ -68,7 +68,7 @@ def register_routes(app,db,bcrypt):
                     return "Wrong Password"
 
             elif user_type == "doctor":
-                doctorEmail = request.form.get('doctor_email')
+                doctorEmail = request.form.get('doctor_email').lower()
                 dpassword = request.form.get('doctor_password')
 
                 doctor = Doctor.query.filter(Doctor.doctorEmail == doctorEmail).first()
