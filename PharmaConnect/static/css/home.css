@@ -1,0 +1,343 @@
+:root {
+  --color-1: #e0fbfc;
+  --color-2: #c2dfe3;
+  --color-3: #9db4c0;
+  --color-4: #5c6b73;
+  --color-5: #253237;
+}
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', Arial, sans-serif;
+  background: var(--color-5);
+  color: var(--color-1);
+}
+
+header {
+  background: var(--color-4);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  position: relative;
+}
+
+.logo {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--color-1);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stethoscope-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 2rem;
+  position: relative;
+}
+
+.nav-links li {
+  position: relative;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--color-1);
+  font-weight: 500;
+  transition: color 0.2s, border-bottom 0.3s cubic-bezier(.4,2,.6,1);
+  border-bottom: 3px solid transparent;
+  position: relative;
+}
+
+.nav-links a.active {
+  color: var(--color-2);
+  border-bottom: 3px solid var(--color-3);
+  background: none;
+}
+
+.nav-indicator {
+  display: none;
+}
+
+.nav-links a:hover {
+  color: var(--color-2);
+}
+
+.hero-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4rem 2rem 2rem 2rem;
+  background: linear-gradient(90deg, var(--color-4) 60%, var(--color-1) 100%);
+  flex-wrap: wrap;
+}
+
+
+ 
+
+
+.hero-content {
+  max-width: 600px;
+}
+
+.hero-content h1 {
+  font-size: 2.8rem;
+  margin-bottom: 1rem;
+  color: var(--color-5);
+ 
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.cta-btn {
+  background: var(--color-2);
+  color: var(--color-5);
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.cta-btn:hover {
+  background: var(--color-1);
+  color: var(--color-4);
+}
+
+.hero-img {
+  width: 600px;
+  max-width: 98vw;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(10,108,255,0.12);
+}
+
+.services-section {
+  padding: 4rem 2rem 2rem 2rem;
+  background: var(--color-2);
+  text-align: center;
+}
+
+.services-section h2 {
+  font-size: 2.2rem;
+  color: var(--color-5);
+  margin-bottom: 2rem;
+}
+
+.services-grid {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.service-card {
+  background: var(--color-1);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.12);
+  padding: 2rem 1.5rem;
+  max-width: 320px;
+  flex: 1 1 260px;
+  text-align: left;
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: var(--color-5);
+}
+
+.service-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(10,108,255,0.12);
+}
+
+.service-card img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.service-card h3 {
+  color: var(--color-4);
+  margin-bottom: 0.5rem;
+}
+
+.testimonials-section {
+  padding: 4rem 2rem 2rem 2rem;
+  background: var(--color-2);
+  text-align: center;
+}
+
+.testimonials-section h2 {
+  font-size: 2.2rem;
+  color: var(--color-5);
+  margin-bottom: 2rem;
+}
+
+.testimonials-grid {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.testimonial-card {
+  background: var(--color-1);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.12);
+  padding: 2rem 1.5rem;
+  max-width: 320px;
+  flex: 1 1 260px;
+  font-style: italic;
+  position: relative;
+  color: var(--color-5);
+}
+
+.testimonial-card span {
+  display: block;
+  margin-top: 1rem;
+  font-style: normal;
+  color: var(--color-4);
+  font-weight: 600;
+}
+
+.about-section {
+  padding: 4rem 2rem 2rem 2rem;
+  background: var(--color-3);
+}
+
+.about-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+.about-content img {
+  width: 320px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(10,108,255,0.08);
+}
+
+.about-content h2 {
+  color: var(--color-5);
+  margin-bottom: 1rem;
+}
+
+.contact-section {
+  padding: 4rem 2rem 2rem 2rem;
+  background: var(--color-5);
+  text-align: center;
+}
+
+.contact-section h2 {
+  font-size: 2.2rem;
+  color: var(--color-5);
+  margin-bottom: 2rem;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.contact-form input,
+.contact-form textarea {
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-3);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: none;
+  background: var(--color-2);
+  color: var(--color-5);
+}
+
+.contact-form button {
+  background: var(--color-2);
+  color: var(--color-5);
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.contact-form button:hover {
+  background: var(--color-3);
+  color: var(--color-5);
+}
+
+footer {
+  background: var(--color-5);
+  color: var(--color-1);
+  text-align: center;
+  padding: 1.2rem 0;
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  margin-right: 0.3rem;
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (max-width: 900px) {
+  .hero-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
+  .about-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .services-grid, .testimonials-grid {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .about-content img {
+    width: 90vw;
+    max-width: 320px;
+  }
+} 
