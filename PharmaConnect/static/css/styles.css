@@ -244,6 +244,24 @@ input:valid + label {
 .show-password-btn:focus {
     outline: none;
 }
+
+.alert {
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.alert.error {
+  background-color: #f44336;
+  color: white;
+}
+
+.alert.success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+
 .form-group input[type="password"],
 .form-group input[type="text"] {
     padding-right: 40px;

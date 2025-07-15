@@ -781,7 +781,7 @@
             }
         }
     </script>
-    <script src="billing.js"></script>
+    <script src="/javascript/billing.js"></script>
     <script>
         async function generateAndSendBill() {
             const customerName = document.getElementById('customer-name').value;
@@ -816,7 +816,7 @@
                 message: `
 Dear ${customerName},
 
-Thank you for your purchase at MediMate Pharmacy!
+Thank you for your purchase at PemiDo Pharmacy!
 
 Bill Details:
 -------------
@@ -826,9 +826,9 @@ Total Amount: ₹${totalAmount}
 Thank you for choosing our services!
 
 Best regards,
-MediMate Pharmacy
+PemiDo Pharmacy
                 `,
-                from_name: "MediMate Pharmacy"
+                from_name: "PemiDo Pharmacy"
             };
 
             try {

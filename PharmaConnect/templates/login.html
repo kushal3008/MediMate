@@ -4,7 +4,7 @@
 
 {% block content %}
     <div class="css-curve-bg"></div>
-    <div class="curve-title">MediMate</div>
+    <div class="curve-title">PemiDo</div>
     <div class="container">
         <div class="form-container">
             <div class="tabs">
@@ -13,8 +13,21 @@
             </div>
             <div class="form-content">
                 <!-- Chemist Sign In Form -->
+
                 <form id="chemist-form" method="POST" action="{{ url_for('login') }}" class="form active">
                     <h2>Chemist Login</h2>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert {{ category }}">
+                            {{ message }}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                    {% if error %}
+                    <div class="error-text">{{ error }}</div>
+                    {% endif %}
                     <input type="hidden" name="user_type" value="chemist">
                     <div class="form-group">
                         <input type="text" name="chemist_email" id="chemist-email" required>
@@ -36,9 +49,21 @@
                 <!-- Doctor Sign In Form -->
                 <form id="doctor-form" method="POST" action="{{ url_for('login') }}" class="form">
                     <h2>Doctor Login</h2>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert {{ category }}">
+                            {{ message }}
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                    {% if error %}
+                    <div class="error-text">{{ error }}</div>
+                    {% endif %}
                     <input type="hidden" name="user_type" value="doctor">
                     <div class="form-group">
-                        <input type="email" name="doctor_email" id="doctor-email" required>
+                        <input type="text" name="doctor_email" id="doctor-email" required>
                         <label for="doctor-email">Email</label>
                     </div>
                     <div class="form-group">
@@ -54,10 +79,29 @@
                     <button type="submit" class="submit-btn">Login</button>
                     <p class="switch-form">Don't have an account? <a href="{{ url_for('signup') }}">Sign Up</a></p>
                 </form>
+
+                
+
             </div>
         </div>
     </div>
     <script src="/javascript/script.js"></script>
+    <style>
+      .error-text {
+        color: #f44336;
+        text-align: center;
+        margin-bottom: 24px;
+        font-size: 1.08rem;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+      }
+      .form-container .form-group:first-of-type {
+        margin-top: 0;
+      }
+      .form-container form h2 {
+        margin-bottom: 24px;
+      }
+    </style>
     <script>
       window.togglePassword = function(inputId, btn) {
         const input = document.getElementById(inputId);

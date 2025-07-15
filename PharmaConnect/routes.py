@@ -1,4 +1,4 @@
-from flask import render_template,request,redirect,session
+from flask import render_template,request,redirect,session,flash
 from models import Chemist,Doctor
 from flask_login import login_user,logout_user,current_user,login_required
 
@@ -50,7 +50,9 @@ def register_routes(app,db,bcrypt):
     def login():
 
         if request.method == "GET":
-            return render_template('login.html')
+            error = session.pop('login_error', None)
+            active_tab = session.pop('active_tab', None)
+            return render_template('login.html', error=error, active_tab=active_tab)
         elif request.method == "POST":
             user_type = request.form.get('user_type')
 
@@ -59,31 +61,44 @@ def register_routes(app,db,bcrypt):
                 cpassword = request.form.get('chemist_password')
 
                 chemist = Chemist.query.filter(Chemist.chemistEmail == chemistEmail).first()
+                if chemist is None:
+                    session['login_error'] = "No user found"
+                    session['active_tab'] = "chemist"
+                    return redirect('/login')
                 if bcrypt.check_password_hash(chemist.password,cpassword):
                     login_user(chemist)
                     session['user_type'] = 'chemist'
                     print(current_user.chemistName)
                     return redirect('/chemist')
                 else:
-                    return "Wrong Password"
+                    session['login_error'] = "Wrong Password"
+                    session['active_tab'] = "chemist"
+                    return redirect('/login')
 
             elif user_type == "doctor":
                 doctorEmail = request.form.get('doctor_email').lower()
                 dpassword = request.form.get('doctor_password')
 
                 doctor = Doctor.query.filter(Doctor.doctorEmail == doctorEmail).first()
+                if doctor is None:
+                    session['login_error'] = "No user found"
+                    session['active_tab'] = "doctor"
+                    return redirect('/login')
                 if bcrypt.check_password_hash(doctor.password ,dpassword):
                     login_user(doctor)
                     print(current_user.doctorName)
                     session['user_type'] = 'doctor'
                     return redirect('/doctor')
                 else:
-                    return "Wrong Password"
+                    session['login_error'] = "Wrong Password"
+                    session['active_tab'] = "doctor"
+                    return redirect('/login')
 
             else:
                 return "Something Went Wrong!"
             
     @app.route('/logout')
+    @login_required
     def logout():
         logout_user()
         session.pop('user_type',None)
