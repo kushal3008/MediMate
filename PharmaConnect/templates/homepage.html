@@ -1,355 +1,80 @@
-{% extends "base.html "%}
-{% block title %}MediMate{% endblock %}
-
-
+{% extends 'base.html' %}
+{% block title %}PemiDo{% endblock %}
 {% block content %}
-    <style>
-        .homepage-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .welcome-content {
-            max-width: 800px;
-            margin-bottom: 60px;
-            width: 100%;
-        }
-
-        .app-title {
-            font-size: 4rem;
-            font-weight: bold;
-            color: var(--color-4);
-            margin-bottom: 20px;
-            text-shadow: 0 4px 12px rgba(255,255,255,0.3);
-            letter-spacing: 3px;
-        }
-
-        .app-subtitle {
-            font-size: 1.5rem;
-            color: var(--color-3);
-            margin-bottom: 40px;
-            font-weight: 500;
-        }
-
-        .intro-text {
-            font-size: 1.2rem;
-            color: var(--color-4);
-            line-height: 1.8;
-            margin-bottom: 50px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .features {
-            display: flex;
-            justify-content: center;
-            align-items: stretch;
-            gap: 30px;
-            margin-bottom: 60px;
-            max-width: 1200px;
-            width: 100%;
-            flex-wrap: wrap;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            flex: 1;
-            min-width: 250px;
-            max-width: 350px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            color: var(--color-4);
-        }
-
-        .feature-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--color-5);
-            margin-bottom: 15px;
-        }
-
-        .feature-description {
-            color: var(--color-4);
-            line-height: 1.6;
-            flex-grow: 1;
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .cta-btn {
-            padding: 15px 40px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-decoration: none;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            min-width: 160px;
-            display: inline-block;
-        }
-
-        .cta-btn.primary {
-            background: linear-gradient(135deg, var(--color-4), var(--color-5));
-            color: white;
-        }
-
-        .cta-btn.secondary {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--color-4);
-            border: 2px solid var(--color-4);
-        }
-
-        .cta-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .cta-btn.primary:hover {
-            background: linear-gradient(135deg, var(--color-5), var(--color-4));
-        }
-
-        .cta-btn.secondary:hover {
-            background: var(--color-4);
-            color: white;
-        }
-
-        /* Tablet Responsive */
-        @media (max-width: 1024px) {
-            .app-title {
-                font-size: 3.5rem;
-            }
-            
-            .app-subtitle {
-                font-size: 1.3rem;
-            }
-            
-            .intro-text {
-                font-size: 1.1rem;
-                max-width: 500px;
-            }
-            
-            .features {
-                gap: 20px;
-            }
-            
-            .feature-card {
-                min-width: 220px;
-                max-width: 300px;
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .homepage-container {
-                padding: 15px;
-                justify-content: flex-start;
-                padding-top: 80px;
-            }
-            
-            .welcome-content {
-                margin-bottom: 40px;
-            }
-            
-            .app-title {
-                font-size: 2.8rem;
-                letter-spacing: 2px;
-            }
-            
-            .app-subtitle {
-                font-size: 1.1rem;
-                margin-bottom: 30px;
-            }
-            
-            .intro-text {
-                font-size: 1rem;
-                margin-bottom: 40px;
-                padding: 0 10px;
-            }
-            
-            .features {
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-                margin-bottom: 40px;
-            }
-            
-            .feature-card {
-                padding: 25px 20px;
-                min-width: 280px;
-                max-width: 400px;
-                width: 100%;
-            }
-            
-            .feature-icon {
-                font-size: 2.5rem;
-            }
-            
-            .feature-title {
-                font-size: 1.2rem;
-            }
-            
-            .cta-buttons {
-                flex-direction: column;
-                gap: 20px;
-                width: 100%;
-            }
-            
-            .cta-btn {
-                width: 100%;
-                max-width: 280px;
-                text-align: center;
-                padding: 18px 30px;
-                font-size: 1rem;
-            }
-        }
-
-        /* Small Mobile Responsive */
-        @media (max-width: 480px) {
-            .homepage-container {
-                padding: 10px;
-                padding-top: 60px;
-            }
-            
-            .app-title {
-                font-size: 2.2rem;
-                letter-spacing: 1px;
-            }
-            
-            .app-subtitle {
-                font-size: 1rem;
-            }
-            
-            .intro-text {
-                font-size: 0.95rem;
-                padding: 0 5px;
-            }
-            
-            .feature-card {
-                padding: 20px 15px;
-            }
-            
-            .feature-icon {
-                font-size: 2rem;
-            }
-            
-            .feature-title {
-                font-size: 1.1rem;
-            }
-            
-            .feature-description {
-                font-size: 0.9rem;
-            }
-            
-            .cta-btn {
-                padding: 16px 25px;
-                font-size: 0.95rem;
-                max-width: 250px;
-            }
-        }
-
-        /* Extra Small Mobile */
-        @media (max-width: 360px) {
-            .app-title {
-                font-size: 1.8rem;
-            }
-            
-            .app-subtitle {
-                font-size: 0.9rem;
-            }
-            
-            .intro-text {
-                font-size: 0.9rem;
-            }
-            
-            .feature-card {
-                padding: 15px 10px;
-            }
-            
-            .cta-btn {
-                padding: 14px 20px;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
-    <div class="css-curve-bg"></div>
-    
-    <div class="homepage-container">
-        <div class="welcome-content">
-            <h1 class="app-title">MediMate</h1>
-            <p class="app-subtitle">Bridging Healthcare Professionals and Pharmacies</p>
-            
-            <p class="intro-text">
-                Welcome to MediMate, the innovative platform that seamlessly connects doctors and chemists 
-                to streamline the prescription and medication delivery process. Our mission is to enhance 
-                healthcare efficiency and improve patient care through digital collaboration.
-            </p>
-            
-            <div class="features">
-                <div class="feature-card">
-                    <div class="feature-icon">👨‍⚕️</div>
-                    <h3 class="feature-title">For Doctors</h3>
-                    <p class="feature-description">
-                        Send digital prescriptions, manage patient records, and collaborate with trusted pharmacies 
-                        for efficient medication delivery.
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">💊</div>
-                    <h3 class="feature-title">For Chemists</h3>
-                    <p class="feature-description">
-                        Receive prescriptions instantly, manage inventory, process orders efficiently, 
-                        and provide better service to patients.
-                    </p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">🏥</div>
-                    <h3 class="feature-title">For Patients</h3>
-                    <p class="feature-description">
-                        Get medications delivered quickly, track prescriptions, and enjoy seamless 
-                        communication between your doctor and pharmacy.
-                    </p>
-                </div>
-            </div>
-            
-            <div class="cta-buttons">
-                <a href="{{ url_for('signup') }}" class="cta-btn primary">Get Started</a>
-                <a href="{{ url_for('login') }}" class="cta-btn secondary">Login</a>
-            </div>
-        </div>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">
+        <img src="img/icon.png" alt="Logo Icon" class="logo-img">
+        PemiDo
+      </div>
+      <ul class="nav-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <span class="nav-indicator"></span>
+    </nav>
+  </header>
+  <section id="home" class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Welcome to PemiDo</h1>
+      <p>Empowering your health with advanced care, compassion, and technology.</p>
+      <a href="#" class="cta-btn">Get Started</a>
     </div>
+    <img src="img/home.jpg" alt="Home" class="hero-img">
+  </section>
+  <section id="services" class="services-section">
+    <h2>Our Services</h2>
+    <div class="services-grid">
+      <div class="service-card">
+        <img src="img/Patient.png" alt="Health AI">
+        <h3>Primary Care</h3>
+        <p>Comprehensive, patient-centered care for all ages, focusing on prevention and wellness.</p>
+      </div>
+      <div class="service-card">
+        <img src="img/urgent.jpg" alt="Chemist Management">
+        <h3>Chemist Management</h3>
+        <p>Efficiently manage chemist operations, inventory, and patient prescriptions with ease.</p>
+      </div>
+      <div class="service-card">
+        <img src="img/primarycare.jpg" alt="Doctor Management">
+        <h3>Doctor Management</h3>
+        <p>Streamline doctor schedules, appointments, and patient records for optimal care delivery.</p>
+      </div>
+    </div>
+  </section>
+  <section id="testimonials" class="testimonials-section">
+    <h2>What Our User Say</h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p>"The care I received was exceptional. The staff is friendly and the technology is top-notch!"</p>
+        <span>- Sarah M.</span>
+      </div>
+      <div class="testimonial-card">
+        <p>"Booking appointments is so easy and the doctors truly listen. Highly recommend!"</p>
+        <span>- John D.</span>
+      </div>
+      <div class="testimonial-card">
+        <p>"I love the virtual consultation option. It saves me so much time and hassle."</p>
+        <span>- Priya S.</span>
+      </div>
+    </div>
+  </section>
+  <section id="about" class="about-section">
+    <div class="about-content">
+      <img src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=400&q=80" alt="About Us">
+      <div>
+        <h2>About Us</h2>
+        <p>PemiDo is dedicated to providing innovative, compassionate, and accessible healthcare. Our team of experienced professionals leverages the latest technology to ensure the best outcomes for our patients.</p>
+      </div>
+    </div>
+  </section>
+  <footer>
+    <p>Contact us: <a href="mailto:PemiDo@gmail.com">PemiDo@gmail.com</a></p>
+    <p>&copy; 2024 PemiDo. All rights reserved.</p>
+  </footer>
+  <script src="script.js"></script>
+</body>
 {% endblock %}
