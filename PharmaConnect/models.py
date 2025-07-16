@@ -30,3 +30,20 @@ class Doctor(db.Model,UserMixin):
     
     def get_id(self):
           return self.doctorId
+    
+class Patient(db.Model,UserMixin):
+    __tablename__ = "patient"
+    patientId = db.Column(db.Integer,primary_key=True)
+    patientdob = db.Column(db.Date,nullable=False)
+    patientName = db.Column(db.String,nullable=False)
+    patientEmail = db.Column(db.String,unique=True,nullable=False)
+    password = db.Column(db.String,nullable=False)
+
+    def __repr__(self):
+            return ""
+    
+    def get_id(self):
+          return self.patientId
+    
+      
+	  

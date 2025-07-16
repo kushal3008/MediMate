@@ -1,6 +1,7 @@
 from flask import render_template,request,redirect,session,flash
-from models import Chemist,Doctor
+from models import Chemist,Doctor,Patient
 from flask_login import login_user,logout_user,current_user,login_required
+from datetime import datetime
 
 def register_routes(app,db,bcrypt):
     
@@ -41,6 +42,22 @@ def register_routes(app,db,bcrypt):
                 db.session.commit()
 
                 return redirect('/login')
+
+            elif user_type == "patient":
+                patientName = request.form.get('patientname')
+                patientEmail = request.form.get('patientemail').lower()
+                dob_str = request.form.get('patientdob')
+                patientdob = datetime.strptime(dob_str, "%Y-%m-%d").date()
+                unhash_ppassword = request.form.get('patientpassword')
+
+                password = bcrypt.generate_password_hash(unhash_ppassword)
+
+                patient = Patient(patientdob=patientdob,patientName=patientName,patientEmail=patientEmail,password=password)
+                db.session.add(patient)
+                db.session.commit()
+
+                return redirect('/login')
+
             
             else:
                 return "Something Went Worng!"
@@ -68,7 +85,6 @@ def register_routes(app,db,bcrypt):
                 if bcrypt.check_password_hash(chemist.password,cpassword):
                     login_user(chemist)
                     session['user_type'] = 'chemist'
-                    print(current_user.chemistName)
                     return redirect('/chemist')
                 else:
                     session['login_error'] = "Wrong Password"
@@ -86,13 +102,32 @@ def register_routes(app,db,bcrypt):
                     return redirect('/login')
                 if bcrypt.check_password_hash(doctor.password ,dpassword):
                     login_user(doctor)
-                    print(current_user.doctorName)
                     session['user_type'] = 'doctor'
                     return redirect('/doctor')
                 else:
                     session['login_error'] = "Wrong Password"
                     session['active_tab'] = "doctor"
                     return redirect('/login')
+                
+            elif user_type == "patient":
+
+                patientEmail = request.form.get('patient_email').lower()
+                ppassword = request.form.get('patient_password')
+
+                patient = Patient.query.filter(Patient.patientEmail == patientEmail).first()
+                if patient is None:
+                    session['login_error'] = "No user found"
+                    session['active_tab'] = "patient"
+                    return redirect('/login')
+                if bcrypt.check_password_hash(patient.password,ppassword):
+                    login_user(patient)
+                    session['user_type'] = "patient"
+                    return redirect('/patient')
+                else:
+                    session['login_error'] = "Wrong Password"
+                    session['active_tab'] = "patient"
+                    return redirect('/login')
+
 
             else:
                 return "Something Went Wrong!"
@@ -113,3 +148,8 @@ def register_routes(app,db,bcrypt):
     @login_required
     def doctor():
         return render_template('doctor.html')
+    
+    @app.route('/patient')
+    @login_required
+    def patient():
+        return render_template('patient.html')

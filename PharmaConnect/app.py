@@ -18,7 +18,7 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        from models import Chemist,Doctor
+        from models import Chemist,Doctor,Patient
         from flask import session
         user_type = session.get('user_type')
 
@@ -26,6 +26,8 @@ def create_app():
             return Chemist.query.get(int(user_id))
         elif user_type == "doctor":
             return Doctor.query.get(int(user_id))
+        elif user_type == "patient":
+            return Patient.query.get(int(user_id))
         else:
             return None
 

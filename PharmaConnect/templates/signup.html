@@ -10,6 +10,7 @@
             <div class="tabs">
                 <button class="tab-btn active" data-tab="chemist-signup">Chemist</button>
                 <button class="tab-btn" data-tab="doctor-signup">Doctor</button>
+                <button class="tab-btn" data-tab="patient-signup">Patient</button>
             </div>
             <div class="form-content">
                 <!-- Chemist Sign Up Form -->
@@ -61,6 +62,35 @@
                         <input type="password" name="doctorpassword" id="doctor-password-signup" required>
                         <label for="doctor-password-signup">Password</label>
                         <button type="button" class="show-password-btn" onclick="togglePassword('doctor-password-signup', this)" aria-label="Show password">
+                          <span class="eye-icon">
+                            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-closed" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.81 21.81 0 0 1 5.06-6.06"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/></svg>
+                          </span>
+                        </button>
+                    </div>
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                    <p class="switch-form">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+                </form>
+                <!-- Patient Sign Up Form -->
+                <form id="patient-signup-form" method="POST" action="{{ url_for('signup') }}" class="form">
+                    <h2>Patient Sign Up</h2>
+                    <input type="hidden" name="user_type" value="patient">
+                    <div class="form-group">
+                        <input type="text" name="patientname" id="patient-name" required>
+                        <label for="patient-name">Patient Name</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="date" name="patientdob" id="patient-dob" required>
+                        <label for="patient-dob">Date of Birth</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="patientemail" id="patient-email-signup" required>
+                        <label for="patient-email-signup">Patient Email</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="patientpassword" id="patient-password-signup" required>
+                        <label for="patient-password-signup">Password</label>
+                        <button type="button" class="show-password-btn" onclick="togglePassword('patient-password-signup', this)" aria-label="Show password">
                           <span class="eye-icon">
                             <svg class="eye-open" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
                             <svg class="eye-closed" style="display:none;" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.81 21.81 0 0 1 5.06-6.06"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/></svg>
