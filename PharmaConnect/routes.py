@@ -2,6 +2,7 @@ from flask import render_template,request,redirect,session,flash
 from models import Chemist,Doctor,Patient
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime
+from api import YOUR_API_KEY
 
 def register_routes(app,db,bcrypt):
 
@@ -21,7 +22,7 @@ def register_routes(app,db,bcrypt):
             from groq import Groq
 
             client = Groq(
-                api_key="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",
+                api_key=YOUR_API_KEY,
             )
             system_prom=(
                 "You are an assistant for medical and pharmacy tasks"
