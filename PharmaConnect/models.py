@@ -38,6 +38,8 @@ class Patient(db.Model,UserMixin):
     patientName = db.Column(db.String,nullable=False)
     patientEmail = db.Column(db.String,unique=True,nullable=False)
     password = db.Column(db.String,nullable=False)
+    contactNumber = db.Column(db.String)
+    address = db.Column(db.String)
 
     def __repr__(self):
             return ""

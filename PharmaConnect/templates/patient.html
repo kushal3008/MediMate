@@ -94,19 +94,23 @@
     }
     /* Chatbot styles (from Medical-Chatbot) */
     .chat-ui {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 350px;
-        max-width: 95vw;
+        /* Remove floating styles */
+        /* position: fixed; */
+        /* bottom: 30px; */
+        /* right: 30px; */
+        width: 100%;
+        max-width: none;
         z-index: 100;
         background: rgba(255,255,255,0.97);
         border-radius: 15px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        box-shadow: none;
         display: flex;
         flex-direction: column;
-        height: 500px;
+        height: calc(100vh - 60px - 64px);
         overflow: hidden;
+        margin: 0;
+        padding: 0;
+        min-height: 400px;
     }
     .chat-header {
         text-align: center;
@@ -174,6 +178,17 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
+    /* Make the address textarea in the patient profile bigger */
+    #patient-address {
+        min-height: 100px;
+        width: 100%;
+        resize: vertical;
+        padding: 10px;
+        border: 1px solid var(--color-3);
+        border-radius: 5px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
     @media (max-width: 800px) {
         .sidebar {
             width: 70px;
@@ -206,7 +221,7 @@
         <a href="#reports" onclick="showSection(event, 'reports')">View Reports</a>
         <a href="#prescriptions" onclick="showSection(event, 'prescriptions')">View Prescriptions</a>
         <a href="#appointments" onclick="showSection(event, 'appointments')">Book Appointment</a>
-        <a href="#chatbot-section" onclick="showSection(event, 'chatbot-section')">Chat with Bot</a>
+        <a href="{{ url_for('chat') }}">Chat with Bot</a>
         <a href="#profile" onclick="showSection(event, 'profile')">Profile</a>
         <a href="/logout" style="border-top: 1px solid var(--color-3); margin-top: 30px; padding-top: 16px;">Logout</a>
     </nav>
@@ -265,100 +280,51 @@
     </section>
     <section id="profile" class="section">
         <h2>Patient Profile</h2>
-        <form id="profile-form" class="profile-form">
+        <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
+        <form id="profile-form" class="profile-form" method="post" action="{{ url_for('patient',_anchor='profile') }}">
             <div class="form-group">
-                <input type="text" id="patient-name" placeholder="Full Name" required>
+                <input type="text" id="patient-name" placeholder="Full Name" required readonly value="{{name}}">
             </div>
             <div class="form-group">
-                <input type="date" id="patient-dob" placeholder="Date of Birth" required>
+                <input type="date" id="patient-dob" placeholder="Date of Birth" required readonly value="{{dob}}">
             </div>
             <div class="form-group">
-                <input type="email" id="patient-email" placeholder="Email Address" required>
+                <input type="email" id="patient-email" placeholder="Email Address" required readonly value="{{email}}">
             </div>
             <div class="form-group">
-                <input type="tel" id="patient-phone" placeholder="Phone Number" required>
+                <input type="tel" id="patient-phone" name ="patient_phone" placeholder="Phone Number" required readonly value="{% if phone%}{{phone}}{%endif%}">
             </div>
             <div class="form-group">
-                <textarea id="patient-address" placeholder="Address" required></textarea>
+                <textarea id="patient-address" name="patient_address" placeholder="Address" required readonly >{%if address%}{{address}}{%endif%}</textarea>
             </div>
-            <button type="submit" class="btn">Update Profile</button>
+            <button type="submit" class="btn" id="update-profile-btn" disabled>Update Profile</button>
         </form>
-    </section>
-    <section id="chatbot-section" class="section">
-        <h2 style="display:none;">Chat with AskMediBot</h2>
-        <div class="chat-ui" id="chatbot-ui-main" style="position:relative;box-shadow:none;width:100%;height:calc(100vh - 40px - 64px);max-width:none;margin:0;padding:0;min-height:400px;">
-            <div class="chat-header" style="font-size:2rem;padding:24px 0;">💬 AskMediBot</div>
-            <div class="chat-box" id="chat-box-main" style="height:calc(100vh - 200px);min-height:300px;"></div>
-            <form method="post" class="chat-form" id="chat-form-main" style="padding:24px;">
-                <input type="text" name="msg" id="user-input-main" placeholder="Ask your medical query..." required style="font-size:1.2rem;"/>
-                <button type="submit" style="font-size:1.2rem;">Send</button>
-            </form>
-        </div>
     </section>
 </main>
 <!-- Chatbot UI (floating) -->
 <script>
-function showSection(event, sectionId) {
-    event.preventDefault();
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
-    document.getElementById(sectionId).classList.add('active');
-    document.querySelectorAll('.sidebar nav a').forEach(link => {
-        link.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    // No floating chatbot to show/hide anymore
-}
-// Chatbot logic for floating widget
-const form = document.getElementById("chat-form");
-const input = document.getElementById("user-input");
-const chatBox = document.getElementById("chat-box");
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const userText = input.value.trim();
-    if (!userText) return;
-    appendMessage("You", userText, "user", chatBox);
-    input.value = "";
-    appendMessage("MediBot", "Typing...", "bot", chatBox);
-    try {
-        const res = await fetch(`/get?msg=${encodeURIComponent(userText)}`);
-        const data = await res.text();
-        chatBox.lastChild.remove(); // remove 'typing...'
-        appendMessage("MediBot", data, "bot", chatBox);
-    } catch {
-        chatBox.lastChild.remove();
-        appendMessage("MediBot", "⚠️ Error fetching response.", "bot", chatBox);
+    function showSection(event, sectionId) {
+        if (event) event.preventDefault();
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(section => section.style.display = 'none');
+        const target = document.getElementById(sectionId);
+        if (target) target.style.display = 'block';
+        document.querySelectorAll('.sidebar nav a').forEach(link => {
+            link.classList.remove('active');
+        });
+        const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+        if (activeLink) activeLink.classList.add('active');
     }
-});
-// Chatbot logic for main section
-const formMain = document.getElementById("chat-form-main");
-const inputMain = document.getElementById("user-input-main");
-const chatBoxMain = document.getElementById("chat-box-main");
-formMain.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const userText = inputMain.value.trim();
-    if (!userText) return;
-    appendMessage("You", userText, "user", chatBoxMain);
-    inputMain.value = "";
-    appendMessage("MediBot", "Typing...", "bot", chatBoxMain);
-    try {
-        const res = await fetch(`/get?msg=${encodeURIComponent(userText)}`);
-        const data = await res.text();
-        chatBoxMain.lastChild.remove(); // remove 'typing...'
-        appendMessage("MediBot", data, "bot", chatBoxMain);
-    } catch {
-        chatBoxMain.lastChild.remove();
-        appendMessage("MediBot", "⚠️ Error fetching response.", "bot", chatBoxMain);
-    }
-});
-function appendMessage(sender, text, role, box) {
-    const msg = document.createElement("div");
-    msg.className = `message ${role}`;
-    msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    box.appendChild(msg);
-    box.scrollTop = box.scrollHeight;
-}
+
+    window.addEventListener("DOMContentLoaded", () => {
+        // Check if there's an anchor in the URL
+        const anchor = window.location.hash.substring(1); // remove the #
+        if (anchor) {
+            showSection(null, anchor);
+        } else {
+            showSection(null, 'dashboard'); // default section
+        }
+    });
 // Appointment booking success message
 const appointmentForm = document.getElementById('appointment-form');
 if (appointmentForm) {
@@ -371,5 +337,47 @@ if (appointmentForm) {
         }, 2000);
     });
 }
+
+// Edit Profile button logic
+const editBtn = document.getElementById('edit-profile-btn');
+const profileForm = document.getElementById('profile-form');
+const phoneInput = document.getElementById('patient-phone');
+const addressInput = document.getElementById('patient-address');
+const updateBtn = document.getElementById('update-profile-btn');
+const nameInput = document.getElementById('patient-name');
+const dobInput = document.getElementById('patient-dob');
+const emailInput = document.getElementById('patient-email');
+
+let editMode = false;
+
+editBtn.addEventListener('click', function() {
+    editMode = !editMode;
+    if (editMode) {
+        editBtn.textContent = 'Cancel Edit';
+        phoneInput.removeAttribute('readonly');
+        addressInput.removeAttribute('readonly');
+        updateBtn.disabled = false;
+    } else {
+        editBtn.textContent = 'Edit Profile';
+        phoneInput.setAttribute('readonly', true);
+        addressInput.setAttribute('readonly', true);
+        updateBtn.disabled = true;
+        // Optionally, reset values to original if canceling
+        // profileForm.reset();
+    }
+});
+
+profileForm.addEventListener('submit', function(e) {
+    if (!editMode) {
+        e.preventDefault();
+        return false;
+    }
+    // After successful update, disable editing again
+    editMode = false;
+    editBtn.textContent = 'Edit Profile';
+    phoneInput.setAttribute('readonly', true);
+    addressInput.setAttribute('readonly', true);
+    updateBtn.disabled = true;
+});
 </script>
 {% endblock %} 
