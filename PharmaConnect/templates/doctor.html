@@ -529,23 +529,25 @@
 
         /* Add these styles to the existing styles section */
         .profile-form {
-            max-width: 500px;
-            margin: 20px auto;
+            max-width: 600px;
+            margin: 0 auto;
             padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-
         .profile-form .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-
         .profile-form input,
         .profile-form textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid var(--color-3);
             border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
         }
-
         .profile-form textarea {
             min-height: 100px;
             resize: vertical;
@@ -631,23 +633,24 @@
         <!-- Profile Section -->
         <section id="profile" class="section">
             <h2>Doctor Profile</h2>
-            <form id="profile-form" class="profile-form">
+            <form id="profile-form" class="profile-form" method="POST" action="{{ url_for('doctor',_anchor='profile') }}">
+                <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
                 <div class="form-group">
-                    <input type="text" id="doctor-name" placeholder="Full Name" required>
+                    <input type="text" name="doctor_name" id="doctor-name" placeholder="Full Name" required readonly value="{{ name }}">
                 </div>
                 <div class="form-group">
-                    <input type="text" id="specialization" placeholder="Specialization" required>
+                    <input type="text" name="doctor_specialization" id="specialization" placeholder="Specialization" required readonly value="{% if specialization %}{{ specialization }}{% endif %}">
                 </div>
                 <div class="form-group">
-                    <input type="email" id="email" placeholder="Email Address" required>
+                    <input type="email" name="doctor_email" id="email" placeholder="Email Address" required readonly value="{{ email }}">
                 </div>
                 <div class="form-group">
-                    <input type="tel" id="phone" placeholder="Phone Number" required>
+                    <input type="tel" name="contact_number" id="phone" placeholder="Phone Number" required readonly value="{% if phone %}{{ phone }}{% endif %}">
                 </div>
                 <div class="form-group">
-                    <textarea id="address" placeholder="Clinic Address" required></textarea>
+                    <textarea id="address" name="clinic_address" placeholder="Clinic Address" required readonly>{% if address %}{{ address }}{% endif %}</textarea>
                 </div>
-                <button type="submit" class="btn">Update Profile</button>
+                <button type="submit" class="btn" id="update-profile-btn" disabled>Update Profile</button>
             </form>
         </section>
     </main>
@@ -655,7 +658,7 @@
     <!-- Add Prescription Modal -->
     <div id="prescriptionModal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="closePrescriptionModal()">&times;</span>
+            <span class="modal-close">&times;</span>
             <h2>Send Prescription</h2>
             <div id="prescriptionChemistInfo"></div>
             
@@ -719,633 +722,92 @@
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script>
-        // Dashboard functionality
-        function initializeDashboard() {
-            // Initialize appointments chart
-            const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');
-            new Chart(appointmentsCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['9 AM', '10 AM', '11 AM', '12 PM', '2 PM', '3 PM', '4 PM'],
-                    datasets: [{
-                        label: 'Appointments',
-                        data: [2, 3, 1, 0, 2, 4, 1],
-                        backgroundColor: '#2196F3',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Initialize patients chart
-            const patientsCtx = document.getElementById('patientsChart').getContext('2d');
-            new Chart(patientsCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['New Patients', 'Follow-up', 'Regular'],
-                    datasets: [{
-                        data: [30, 45, 25],
-                        backgroundColor: ['#4CAF50', '#2196F3', '#FFC107']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-
-            // Load sample data
-            loadRecentPrescriptions();
-            loadUpcomingAppointments();
-        }
-
-        function loadRecentPrescriptions() {
-            const prescriptions = [
-                {
-                    patient: 'Rahul Kumar',
-                    date: '2024-03-15',
-                    medicines: ['Paracetamol 500mg', 'Amoxicillin 250mg'],
-                    diagnosis: 'Fever and sore throat'
-                },
-                {
-                    patient: 'Priya Singh',
-                    date: '2024-03-14',
-                    medicines: ['Ibuprofen 400mg', 'Omeprazole 20mg'],
-                    diagnosis: 'Gastritis'
-                }
-            ];
-
-            const prescriptionsList = document.getElementById('recent-prescriptions');
-            prescriptionsList.innerHTML = prescriptions.map(prescription => `
-                <div class="patient-card">
-                    <h4>${prescription.patient}</h4>
-                    <p><strong>Date:</strong> ${prescription.date}</p>
-                    <p><strong>Diagnosis:</strong> ${prescription.diagnosis}</p>
-                    <p><strong>Medicines:</strong> ${prescription.medicines.join(', ')}</p>
-                </div>
-            `).join('');
-        }
-
-        function loadUpcomingAppointments() {
-            const appointments = [
-                {
-                    patient: 'Amit Patel',
-                    time: '10:00 AM',
-                    type: 'Follow-up',
-                    status: 'scheduled'
-                },
-                {
-                    patient: 'Neha Sharma',
-                    time: '11:30 AM',
-                    type: 'New Patient',
-                    status: 'scheduled'
-                }
-            ];
-
-            const appointmentsList = document.getElementById('upcoming-appointments');
-            appointmentsList.innerHTML = appointments.map(appointment => `
-                <div class="appointment-card">
-                    <div class="appointment-info">
-                        <h4>${appointment.patient}</h4>
-                        <p>Time: ${appointment.time}</p>
-                        <p>Type: ${appointment.type}</p>
-                    </div>
-                    <span class="appointment-status status-${appointment.status}">
-                        ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
-                </div>
-            `).join('');
-        }
-
-        function loadPatients() {
-            const patients = [
-                {
-                    name: 'Rahul Kumar',
-                    age: 35,
-                    gender: 'Male',
-                    phone: '+91 9876543210',
-                    lastVisit: '2024-03-15',
-                    medicalHistory: 'Hypertension, Type 2 Diabetes'
-                },
-                {
-                    name: 'Priya Singh',
-                    age: 28,
-                    gender: 'Female',
-                    phone: '+91 9876543211',
-                    lastVisit: '2024-03-14',
-                    medicalHistory: 'Asthma'
-                }
-            ];
-
-            const patientsList = document.getElementById('patientsList');
-            patientsList.innerHTML = patients.map(patient => `
-                <div class="patient-card">
-                    <h4>${patient.name}</h4>
-                    <div class="patient-info">
-                        <p><strong>Age:</strong> ${patient.age}</p>
-                        <p><strong>Gender:</strong> ${patient.gender}</p>
-                        <p><strong>Phone:</strong> ${patient.phone}</p>
-                        <p><strong>Last Visit:</strong> ${patient.lastVisit}</p>
-                    </div>
-                    <p><strong>Medical History:</strong> ${patient.medicalHistory}</p>
-                    <div class="prescription-form">
-                        <textarea placeholder="Write prescription..."></textarea>
-                        <button class="btn" onclick="sendPrescription('${patient.name}')">Send Prescription</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadAppointments() {
-            const appointments = [
-                {
-                    patient: 'Amit Patel',
-                    date: '2024-03-16',
-                    time: '10:00 AM',
-                    type: 'Follow-up',
-                    status: 'scheduled'
-                },
-                {
-                    patient: 'Neha Sharma',
-                    date: '2024-03-16',
-                    time: '11:30 AM',
-                    type: 'New Patient',
-                    status: 'scheduled'
-                },
-                {
-                    patient: 'Rajesh Kumar',
-                    date: '2024-03-15',
-                    time: '2:00 PM',
-                    type: 'Regular Checkup',
-                    status: 'completed'
-                }
-            ];
-
-            const appointmentsList = document.getElementById('appointments-list');
-            appointmentsList.innerHTML = appointments.map(appointment => `
-                <div class="appointment-card">
-                    <div class="appointment-info">
-                        <h4>${appointment.patient}</h4>
-                        <p>Date: ${appointment.date}</p>
-                        <p>Time: ${appointment.time}</p>
-                        <p>Type: ${appointment.type}</p>
-                    </div>
-                    <span class="appointment-status status-${appointment.status}">
-                        ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
-                </div>
-            `).join('');
-        }
-
         function showSection(event, sectionId) {
-            event.preventDefault();
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionId).classList.add('active');
-            
-            document.querySelectorAll('.sidebar a').forEach(link => {
-                link.classList.remove('active');
-            });
-            event.target.classList.add('active');
+        if (event) event.preventDefault();
 
-            // Load section-specific data
-            if (sectionId === 'dashboard') {
-                initializeDashboard();
-            } else if (sectionId === 'patients') {
-                loadPatients();
-            } else if (sectionId === 'appointments') {
-                loadAppointments();
-            } else if (sectionId === 'nearby-chemists') {
-                loadNearbyChemists();
-            }
-        }
-
-        // Initialize dashboard when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDashboard();
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
         });
 
-        // Add logout function
-        function logout() {
-            // Add logout logic here
-            window.location.href = 'index.html';
-        }
+        // Show selected section
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
 
-        // Handle profile form submission
-        document.getElementById('profile-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Add profile update logic here
-            alert('Profile updated successfully!');
+        // Remove 'active' class from all links
+        document.querySelectorAll('.sidebar nav a').forEach(link => {
+            link.classList.remove('active');
         });
 
-        function sendPrescription(patientName) {
-            // Add prescription sending logic here
-            alert(`Prescription sent to ${patientName}`);
+        // Add 'active' class to clicked link
+        const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        // Update the URL hash
+        if (sectionId !== 'dashboard') {
+            history.replaceState(null, null, '#' + sectionId);
+        } else {
+            history.replaceState(null, null, '#dashboard');
         }
+    }
 
-        function loadNearbyChemists() {
-            // Sample data - replace with actual API call
-            const chemists = [
-                {
-                    id: 1,
-                    name: "MedPlus Pharmacy",
-                    owner: "Rajesh Kumar",
-                    address: "123 Main Street, Sector 15",
-                    phone: "+91 9876543210",
-                    distance: "0.5 km",
-                    rating: 4.5,
-                    isOpen: true,
-                    timings: "9:00 AM - 9:00 PM",
-                    license: "PH123456"
-                },
-                {
-                    id: 2,
-                    name: "HealthCare Pharmacy",
-                    owner: "Priya Singh",
-                    address: "456 Park Road, Sector 22",
-                    phone: "+91 9876543211",
-                    distance: "1.2 km",
-                    rating: 4.2,
-                    isOpen: true,
-                    timings: "8:00 AM - 10:00 PM",
-                    license: "PH789012"
-                },
-                {
-                    id: 3,
-                    name: "City Medical Store",
-                    owner: "Amit Patel",
-                    address: "789 Market Street, Sector 8",
-                    phone: "+91 9876543212",
-                    distance: "2.0 km",
-                    rating: 4.0,
-                    isOpen: false,
-                    timings: "10:00 AM - 8:00 PM",
-                    license: "PH345678"
-                }
-            ];
+    // On page load, show the section from the anchor
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+        showSection(null, hash);
+    });
 
-            const chemistsGrid = document.querySelector('.chemists-grid');
-            chemistsGrid.innerHTML = chemists.map(chemist => `
-                <div class="chemist-card">
-                    <div class="chemist-info">
-                        <h3>${chemist.name}</h3>
-                        <p><strong>Address:</strong> ${chemist.address}</p>
-                        <p><strong>Phone:</strong> ${chemist.phone}</p>
-                        <p><strong>Distance:</strong> ${chemist.distance} km</p>
-                    </div>
-                    <div class="chemist-actions">
-                        <button class="btn" onclick="viewChemistDetails('${chemist.id}')">Order Medicine</button>
-                    </div>
-                </div>
-            `).join('');
+        // Edit Profile button logic for Doctor
+        const editBtn = document.getElementById('edit-profile-btn');
+        const profileForm = document.getElementById('profile-form');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+        const emailInput = document.getElementById('email');
+        const nameInput = document.getElementById('doctor-name');
+        const specializationInput = document.getElementById('specialization');
+        const updateBtn = document.getElementById('update-profile-btn');
 
-            // Add search functionality
-            const searchInput = document.getElementById('chemist-search');
-            searchInput.addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const filteredChemists = chemists.filter(chemist => 
-                    chemist.name.toLowerCase().includes(searchTerm) ||
-                    chemist.address.toLowerCase().includes(searchTerm) ||
-                    chemist.owner.toLowerCase().includes(searchTerm)
-                );
-                
-                chemistsGrid.innerHTML = filteredChemists.map(chemist => `
-                    <div class="chemist-card">
-                        <div class="chemist-info">
-                            <h3>${chemist.name}</h3>
-                            <p><strong>Address:</strong> ${chemist.address}</p>
-                            <p><strong>Phone:</strong> ${chemist.phone}</p>
-                            <p><strong>Distance:</strong> ${chemist.distance} km</p>
-                        </div>
-                        <div class="chemist-actions">
-                            <button class="btn" onclick="viewChemistDetails('${chemist.id}')">Order Medicine</button>
-                        </div>
-                    </div>
-                `).join('');
-            });
-        }
+        let editMode = false;
 
-        // Add medicine ordering functionality
-        let currentChemistId = null;
-        let selectedMedicines = [];
-        const medicinePrices = {
-            'Paracetamol 500mg': 5.00,
-            'Amoxicillin 250mg': 8.50,
-            'Ibuprofen 400mg': 7.25,
-            'Omeprazole 20mg': 12.00,
-            'Cetirizine 10mg': 4.75,
-            'Aspirin 75mg': 3.50,
-            'Metformin 500mg': 6.25,
-            'Atorvastatin 20mg': 15.00,
-            'Losartan 50mg': 9.75,
-            'Metoprolol 25mg': 8.00
-        };
-
-        function viewChemistDetails(chemistId) {
-            currentChemistId = chemistId;
-            const chemist = getChemistDetails(chemistId);
-            const modal = document.getElementById('orderMedicineModal');
-            const chemistInfo = document.getElementById('selectedChemistInfo');
-            
-            chemistInfo.innerHTML = `
-                <h3>${chemist.name}</h3>
-                <p><strong>Address:</strong> ${chemist.address}</p>
-                <p><strong>Phone:</strong> ${chemist.phone}</p>
-            `;
-            
-            modal.classList.add('active');
-            resetOrderForm();
-        }
-
-        function closeOrderModal() {
-            document.getElementById('orderMedicineModal').classList.remove('active');
-            resetOrderForm();
-        }
-
-        function resetOrderForm() {
-            selectedMedicines = [];
-            document.getElementById('medicineOrderList').innerHTML = '';
-            document.getElementById('orderNotes').value = '';
-            document.getElementById('orderTotal').textContent = '0.00';
-            document.getElementById('medicineSearchInput').value = '';
-            document.getElementById('medicineSuggestions').style.display = 'none';
-        }
-
-        function searchMedicines(query) {
-            const suggestions = document.getElementById('medicineSuggestions');
-            if (!query) {
-                suggestions.style.display = 'none';
-                return;
-            }
-
-            const filteredMedicines = Object.keys(medicinePrices).filter(medicine => 
-                medicine.toLowerCase().includes(query.toLowerCase())
-            );
-
-            if (filteredMedicines.length > 0) {
-                suggestions.innerHTML = filteredMedicines.map(medicine => `
-                    <div class="medicine-suggestion-item" onclick="selectMedicine('${medicine}')">
-                        ${medicine} - ₹${medicinePrices[medicine].toFixed(2)}
-                    </div>
-                `).join('');
-                suggestions.style.display = 'block';
+        editBtn.addEventListener('click', function() {
+            editMode = !editMode;
+            if (editMode) {
+                editBtn.textContent = 'Cancel Edit';
+                phoneInput.removeAttribute('readonly');
+                addressInput.removeAttribute('readonly');
+                emailInput.removeAttribute('readonly');
+                nameInput.removeAttribute('readonly');
+                specializationInput.removeAttribute('readonly');
+                updateBtn.disabled = false;
             } else {
-                suggestions.style.display = 'none';
+                editBtn.textContent = 'Edit Profile';
+                phoneInput.setAttribute('readonly', true);
+                addressInput.setAttribute('readonly', true);
+                emailInput.setAttribute('readonly', true);
+                nameInput.setAttribute('readonly', true);
+                specializationInput.setAttribute('readonly', true);
+                updateBtn.disabled = true;
+                // Optionally, reset values to original if canceling
+                // profileForm.reset();
             }
-        }
+        });
 
-        function selectMedicine(medicine) {
-            document.getElementById('medicineSearchInput').value = medicine;
-            document.getElementById('medicineSuggestions').style.display = 'none';
-            addMedicineItem(medicine);
-        }
-
-        function addMedicineItem(medicineName = '') {
-            const medicineList = document.getElementById('medicineOrderList');
-            const medicineId = Date.now(); // Unique ID for the medicine item
-            
-            const medicineItem = document.createElement('div');
-            medicineItem.className = 'medicine-item';
-            medicineItem.setAttribute('data-id', medicineId);
-            medicineItem.innerHTML = `
-                <select onchange="updateMedicinePrice(${medicineId})" class="medicine-select">
-                    <option value="">Select Medicine</option>
-                    ${Object.keys(medicinePrices).map(med => 
-                        `<option value="${med}" ${med === medicineName ? 'selected' : ''}>${med}</option>`
-                    ).join('')}
-                </select>
-                <input type="number" 
-                       value="1" 
-                       min="1" 
-                       onchange="updateMedicineQuantity(${medicineId})"
-                       class="medicine-quantity">
-                <span class="medicine-price">₹0.00</span>
-                <button class="remove-medicine-btn" onclick="removeMedicineItem(${medicineId})">Remove</button>
-            `;
-            
-            medicineList.appendChild(medicineItem);
-            selectedMedicines.push({
-                id: medicineId,
-                name: medicineName || '',
-                quantity: 1,
-                price: medicineName ? medicinePrices[medicineName] : 0
-            });
-            
-            updateOrderTotal();
-        }
-
-        function updateMedicinePrice(medicineId) {
-            const medicineItem = document.querySelector(`[data-id="${medicineId}"]`);
-            const select = medicineItem.querySelector('.medicine-select');
-            const medicine = select.value;
-            const price = medicinePrices[medicine] || 0;
-            
-            const medicineIndex = selectedMedicines.findIndex(m => m.id === medicineId);
-            if (medicineIndex !== -1) {
-                selectedMedicines[medicineIndex].name = medicine;
-                selectedMedicines[medicineIndex].price = price;
-                updateOrderTotal();
+        profileForm.addEventListener('submit', function(e) {
+            if (!editMode) {
+                e.preventDefault();
+                return false;
             }
-        }
-
-        function updateMedicineQuantity(medicineId) {
-            const medicineItem = document.querySelector(`[data-id="${medicineId}"]`);
-            const quantity = parseInt(medicineItem.querySelector('.medicine-quantity').value) || 0;
-            
-            const medicineIndex = selectedMedicines.findIndex(m => m.id === medicineId);
-            if (medicineIndex !== -1) {
-                selectedMedicines[medicineIndex].quantity = quantity;
-                updateOrderTotal();
-            }
-        }
-
-        function removeMedicineItem(medicineId) {
-            const medicineItem = document.querySelector(`[data-id="${medicineId}"]`);
-            medicineItem.remove();
-            selectedMedicines = selectedMedicines.filter(m => m.id !== medicineId);
-            updateOrderTotal();
-        }
-
-        function updateOrderTotal() {
-            const total = selectedMedicines.reduce((sum, medicine) => 
-                sum + (medicine.price * medicine.quantity), 0
-            );
-            document.getElementById('orderTotal').textContent = total.toFixed(2);
-        }
-
-        function placeOrder() {
-            if (selectedMedicines.length === 0) {
-                alert('Please add at least one medicine to the order');
-                return;
-            }
-
-            const order = {
-                chemistId: currentChemistId,
-                medicines: selectedMedicines,
-                notes: document.getElementById('orderNotes').value,
-                total: parseFloat(document.getElementById('orderTotal').textContent),
-                orderDate: new Date().toISOString()
-            };
-
-            // Here you would typically send this order to your backend
-            console.log('Placing order:', order);
-            alert('Order placed successfully!');
-            closeOrderModal();
-        }
-
-        function getChemistDetails(chemistId) {
-            // This would typically be an API call
-            return {
-                id: chemistId,
-                name: "MedPlus Pharmacy",
-                address: "123 Main Street, Sector 15",
-                phone: "+91 9876543210"
-            };
-        }
-
-        // Update the existing sendPrescriptionToChemist function
-        function sendPrescriptionToChemist(chemistId) {
-            currentChemistId = chemistId;
-            viewChemistDetails(chemistId);
-        }
-
-        // Add these functions to the existing script section
-        let prescriptionMedicines = [];
-        let currentPrescriptionChemistId = null;
-
-        function sendPrescriptionToChemist(chemistId) {
-            currentPrescriptionChemistId = chemistId;
-            const chemist = getChemistDetails(chemistId);
-            const modal = document.getElementById('prescriptionModal');
-            const chemistInfo = document.getElementById('prescriptionChemistInfo');
-            
-            chemistInfo.innerHTML = `
-                <h3>${chemist.name}</h3>
-                <p><strong>Address:</strong> ${chemist.address}</p>
-                <p><strong>Phone:</strong> ${chemist.phone}</p>
-            `;
-            
-            modal.classList.add('active');
-            resetPrescriptionForm();
-        }
-
-        function closePrescriptionModal() {
-            document.getElementById('prescriptionModal').classList.remove('active');
-            resetPrescriptionForm();
-        }
-
-        function resetPrescriptionForm() {
-            prescriptionMedicines = [];
-            document.getElementById('prescriptionMedicineList').innerHTML = '';
-            document.getElementById('patientName').value = '';
-            document.getElementById('patientAge').value = '';
-            document.getElementById('diagnosis').value = '';
-            document.getElementById('prescriptionNotes').value = '';
-        }
-
-        function addPrescriptionMedicine() {
-            const medicineList = document.getElementById('prescriptionMedicineList');
-            const medicineId = Date.now();
-            
-            const medicineItem = document.createElement('div');
-            medicineItem.className = 'prescription-medicine-item';
-            medicineItem.setAttribute('data-id', medicineId);
-            medicineItem.innerHTML = `
-                <select class="medicine-select" required>
-                    <option value="">Select Medicine</option>
-                    ${Object.keys(medicinePrices).map(med => 
-                        `<option value="${med}">${med}</option>`
-                    ).join('')}
-                </select>
-                <input type="text" 
-                       placeholder="Dosage" 
-                       class="medicine-dosage" 
-                       required>
-                <input type="text" 
-                       placeholder="Duration" 
-                       class="medicine-duration" 
-                       required>
-                <button class="remove-btn" onclick="removePrescriptionMedicine(${medicineId})">Remove</button>
-            `;
-            
-            medicineList.appendChild(medicineItem);
-            prescriptionMedicines.push({
-                id: medicineId,
-                name: '',
-                dosage: '',
-                duration: ''
-            });
-        }
-
-        function removePrescriptionMedicine(medicineId) {
-            const medicineItem = document.querySelector(`.prescription-medicine-item[data-id="${medicineId}"]`);
-            medicineItem.remove();
-            prescriptionMedicines = prescriptionMedicines.filter(m => m.id !== medicineId);
-        }
-
-        function sendPrescription() {
-            const patientName = document.getElementById('patientName').value;
-            const patientAge = document.getElementById('patientAge').value;
-            const diagnosis = document.getElementById('diagnosis').value;
-            const notes = document.getElementById('prescriptionNotes').value;
-
-            if (!patientName || !patientAge || !diagnosis) {
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            // Collect medicine details
-            const medicines = Array.from(document.querySelectorAll('.prescription-medicine-item')).map(item => ({
-                name: item.querySelector('.medicine-select').value,
-                dosage: item.querySelector('.medicine-dosage').value,
-                duration: item.querySelector('.medicine-duration').value
-            }));
-
-            if (medicines.length === 0) {
-                alert('Please add at least one medicine to the prescription');
-                return;
-            }
-
-            const prescription = {
-                chemistId: currentPrescriptionChemistId,
-                patient: {
-                    name: patientName,
-                    age: patientAge
-                },
-                diagnosis: diagnosis,
-                medicines: medicines,
-                notes: notes,
-                date: new Date().toISOString()
-            };
-
-            // Here you would typically send this prescription to your backend
-            console.log('Sending prescription:', prescription);
-            alert('Prescription sent successfully!');
-            closePrescriptionModal();
-        }
+            // After successful update, disable editing again
+            editMode = false;
+            editBtn.textContent = 'Edit Profile';
+            phoneInput.setAttribute('readonly', true);
+            addressInput.setAttribute('readonly', true);
+            emailInput.setAttribute('readonly', true);
+            nameInput.setAttribute('readonly', true);
+            specializationInput.setAttribute('readonly', true);
+            updateBtn.disabled = true;
+        });
     </script>
 {% endblock %}

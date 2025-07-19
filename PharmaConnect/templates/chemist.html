@@ -322,16 +322,19 @@
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-
-        .profile-form .form-group label {
-            display: none;
+        .profile-form .form-group {
+            margin-bottom: 20px;
         }
-
+        .profile-form input,
         .profile-form textarea {
             width: 100%;
             padding: 10px;
-            border: 2px solid var(--color-3);
+            border: 1px solid var(--color-3);
             border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .profile-form textarea {
             min-height: 100px;
             resize: vertical;
         }
@@ -646,363 +649,104 @@
         </section>
         <section id="profile" class="section">
             <h2>Chemist Profile</h2>
-            <form id="profile-form" class="profile-form" onsubmit="saveProfile(event)">
+            <form id="profile-form" class="profile-form" method="post" action="{{ url_for('chemist',_anchor='profile')}}">
+                <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
                 <div class="form-group center-label">
-                    <input type="text" id="company-name" placeholder="Enter Company Name" required>
+                    <input type="text" name="shopname" id="company-name" placeholder="Enter Shop Name" required readonly value="{{ name }}">
                 </div>
                 <div class="form-group center-label">
-                    <textarea id="company-address" placeholder="Enter Company Address" required></textarea>
+                    <textarea name="shop_address" id="company-address" placeholder="Enter Company Address" required readonly>{% if address %}{{ address }}{%endif%}</textarea>
                 </div>
                 <div class="form-group center-label">
-                    <input type="text" id="company-phone" placeholder="Enter Mobile Number" required>
+                    <input type="text" name="company_phone" id="company-phone" placeholder="Enter Mobile Number" required readonly value="{%if phone%}{{ phone }}{%endif%}">
                 </div>
                 <div class="form-group center-label">
-                    <input type="text" id="company-email" placeholder="Enter Email Address" required>
+                    <input type="text" name="company_email" id="company-email" placeholder="Enter Email Address" required readonly value="{{ email }}">
                 </div>
-                <button type="submit" class="submit-btn">Save Profile</button>
+                <button type="submit" class="submit-btn" id="update-profile-btn" disabled>Save Profile</button>
             </form>
         </section>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-        (function() {
-            emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your EmailJS public key
-        })();
-
         function showSection(event, sectionId) {
-            event.preventDefault();
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionId).classList.add('active');
-            
-            document.querySelectorAll('.sidebar a').forEach(link => {
-                link.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
+        if (event) event.preventDefault();
 
-        function initializeInputFields() {
-            const inputs = document.querySelectorAll('.form-group.center-label input');
-            inputs.forEach(input => {
-                // Set initial placeholder
-                if (!input.value) {
-                    input.setAttribute('placeholder', getPlaceholderText(input));
-                }
-
-                // Handle input events
-                input.addEventListener('input', function() {
-                    if (!this.value) {
-                        this.setAttribute('placeholder', getPlaceholderText(this));
-                    }
-                });
-
-                // Handle focus events
-                input.addEventListener('focus', function() {
-                    if (!this.value) {
-                        this.setAttribute('placeholder', getPlaceholderText(this));
-                    }
-                });
-
-                input.addEventListener('blur', function() {
-                    if (!this.value) {
-                        this.setAttribute('placeholder', getPlaceholderText(this));
-                    }
-                });
-            });
-        }
-
-        function getPlaceholderText(input) {
-            switch(input.id) {
-                case 'drug-name':
-                    return 'Search or enter medicine name';
-                case 'drug-id':
-                    return 'Enter medicine ID';
-                case 'drug-quantity':
-                    return 'Enter quantity';
-                case 'drug-expiry':
-                    return 'Enter expiry date';
-                case 'drug-price':
-                    return 'Enter price';
-                case 'company-name':
-                    return 'Enter company name';
-                case 'search-drug':
-                    return 'Search medicines...';
-                case 'quantity':
-                    return 'Enter quantity';
-                case 'customer-name':
-                    return 'Enter customer name';
-                case 'customer-email':
-                    return 'Enter customer email';
-                default:
-                    return '';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeInputFields();
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
         });
 
-        function registerDrug(event) {
-            event.preventDefault();
-            const formData = {
-                name: document.getElementById('drug-name').value,
-                id: document.getElementById('drug-id').value,
-                quantity: parseInt(document.getElementById('drug-quantity').value),
-                expiry: document.getElementById('drug-expiry').value,
-                price: parseFloat(document.getElementById('drug-price').value),
-                company: document.getElementById('company-name').value
-            };
+        // Show selected section
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
 
-            addRegisteredDrug(formData);
+        // Remove 'active' class from all links
+        document.querySelectorAll('.sidebar nav a').forEach(link => {
+            link.classList.remove('active');
+        });
 
-            document.getElementById('register-drug-success').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('register-drug-success').style.display = 'none';
-                document.getElementById('register-drug-form').reset();
-                initializeInputFields();
-            }, 2000);
+        // Add 'active' class to clicked link
+        const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+        if (activeLink) activeLink.classList.add('active');
+
+        // Update the URL hash
+        if (sectionId !== 'dashboard') {
+            history.replaceState(null, null, '#' + sectionId);
+        } else {
+            history.replaceState(null, null, '#dashboard');
         }
+    }
 
-        function incrementQuantity() {
-            const input = document.getElementById('quantity');
-            const currentValue = parseInt(input.value) || 0;
-            if (currentValue < 50) {
-                input.value = currentValue + 1;
-            }
-        }
+    // On page load, show the section from the anchor
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+        showSection(null, hash);
+    });
+        // Edit Profile button logic for Chemist
+        const editBtn = document.getElementById('edit-profile-btn');
+        const profileForm = document.getElementById('profile-form');
+        const phoneInput = document.getElementById('company-phone');
+        const addressInput = document.getElementById('company-address');
+        const emailInput = document.getElementById('company-email');
+        const nameInput = document.getElementById('company-name');
+        const updateBtn = document.getElementById('update-profile-btn');
 
-        function decrementQuantity() {
-            const input = document.getElementById('quantity');
-            const currentValue = parseInt(input.value) || 0;
-            if (currentValue > 1) {
-                input.value = currentValue - 1;
-            }
-        }
-    </script>
-    <script src="/javascript/billing.js"></script>
-    <script>
-        async function generateAndSendBill() {
-            const customerName = document.getElementById('customer-name').value;
-            const customerEmail = document.getElementById('customer-email').value;
-            const totalAmount = document.getElementById('total-amount').textContent;
-            const cartItems = document.getElementById('cart-items').children;
+        let editMode = false;
 
-            // Validate inputs
-            if (!customerName || !customerEmail) {
-                alert('Please enter customer name and email address');
-                return;
-            }
-
-            if (cartItems.length === 0) {
-                alert('Please add items to cart before generating bill');
-                return;
-            }
-
-            // Generate bill content
-            let itemsList = '';
-            let total = 0;
-            
-            Array.from(cartItems).forEach(item => {
-                const itemText = item.textContent;
-                itemsList += `${itemText}\n`;
-            });
-
-            // Create email template with detailed bill
-            const emailTemplate = {
-                to_email: customerEmail,
-                to_name: customerName,
-                message: `
-Dear ${customerName},
-
-Thank you for your purchase at PemiDo Pharmacy!
-
-Bill Details:
--------------
-${itemsList}
-Total Amount: ₹${totalAmount}
-
-Thank you for choosing our services!
-
-Best regards,
-PemiDo Pharmacy
-                `,
-                from_name: "PemiDo Pharmacy"
-            };
-
-            try {
-                // Show processing message
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Processing...';
-                btn.disabled = true;
-
-                // Send email using EmailJS
-                await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', emailTemplate);
-                
-                // Show success message
-                alert('Bill has been generated and sent successfully to ' + customerEmail);
-                
-                // Clear cart and form
-                document.getElementById('cart-items').innerHTML = '';
-                document.getElementById('customer-name').value = '';
-                document.getElementById('customer-email').value = '';
-                document.getElementById('total-amount').textContent = '0.00';
-                
-            } catch (error) {
-                alert('Failed to generate and send bill. Please try again.');
-                console.error('Email error:', error);
-            } finally {
-                // Reset button
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
-        }
-    </script>
-    <script>
-        // Dashboard functionality
-        function initializeDashboard() {
-            // Initialize sales chart
-            const salesCtx = document.getElementById('salesChart').getContext('2d');
-            new Chart(salesCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Monthly Sales',
-                        data: [12000, 19000, 15000, 25000, 22000, 30000],
-                        borderColor: '#4CAF50',
-                        tension: 0.1,
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₹' + value.toLocaleString();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Initialize stock chart
-            const stockCtx = document.getElementById('stockChart').getContext('2d');
-            new Chart(stockCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Paracetamol', 'Amoxicillin', 'Ibuprofen', 'Omeprazole', 'Cetirizine'],
-                    datasets: [{
-                        label: 'Current Stock',
-                        data: [150, 80, 120, 90, 200],
-                        backgroundColor: '#2196F3',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Quantity'
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Load doctor orders
-            loadDoctorOrders();
-        }
-
-        function loadDoctorOrders() {
-            // Sample doctor orders data - replace with actual API call
-            const orders = [
-                {
-                    id: 1,
-                    doctor: 'Dr. Sharma',
-                    patient: 'Rahul Kumar',
-                    medicines: ['Paracetamol 500mg', 'Amoxicillin 250mg'],
-                    date: '2024-03-15',
-                    status: 'pending'
-                },
-                {
-                    id: 2,
-                    doctor: 'Dr. Patel',
-                    patient: 'Priya Singh',
-                    medicines: ['Ibuprofen 400mg', 'Omeprazole 20mg'],
-                    date: '2024-03-14',
-                    status: 'completed'
-                }
-            ];
-
-            const ordersList = document.getElementById('doctor-orders-list');
-            ordersList.innerHTML = orders.map(order => `
-                <div class="order-item">
-                    <div class="order-info">
-                        <h4>Order #${order.id}</h4>
-                        <p>Doctor: ${order.doctor}</p>
-                        <p>Patient: ${order.patient}</p>
-                        <p>Medicines: ${order.medicines.join(', ')}</p>
-                        <p>Date: ${order.date}</p>
-                    </div>
-                    <span class="order-status status-${order.status}">
-                        ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                </div>
-            `).join('');
-        }
-
-        // Initialize dashboard when the section is shown
-        document.addEventListener('DOMContentLoaded', function() {
-            const dashboardSection = document.getElementById('dashboard');
-            if (dashboardSection.classList.contains('active')) {
-                initializeDashboard();
+        editBtn.addEventListener('click', function() {
+            editMode = !editMode;
+            if (editMode) {
+                editBtn.textContent = 'Cancel Edit';
+                phoneInput.removeAttribute('readonly');
+                addressInput.removeAttribute('readonly');
+                emailInput.removeAttribute('readonly');
+                nameInput.removeAttribute('readonly');
+                updateBtn.disabled = false;
+            } else {
+                editBtn.textContent = 'Edit Profile';
+                phoneInput.setAttribute('readonly', true);
+                addressInput.setAttribute('readonly', true);
+                emailInput.setAttribute('readonly', true);
+                nameInput.setAttribute('readonly', true);
+                updateBtn.disabled = true;
+                // Optionally, reset values to original if canceling
+                // profileForm.reset();
             }
         });
 
-        // Update showSection function to initialize dashboard when shown
-        const originalShowSection = showSection;
-        showSection = function(event, sectionId) {
-            originalShowSection(event, sectionId);
-            if (sectionId === 'dashboard') {
-                initializeDashboard();
+        profileForm.addEventListener('submit', function(e) {
+            if (!editMode) {
+                e.preventDefault();
+                return false;
             }
-        };
-
-        // Dynamically adjust sidebar username font size based on username length
-        document.addEventListener('DOMContentLoaded', function() {
-            var username = document.getElementById('sidebar-username');
-            if (username) {
-                var name = username.textContent.replace('Hello, ', '').trim();
-                username.style.setProperty('--username-length', name.length);
-                if (name.length > 18) {
-                    username.style.fontSize = '1.1rem';
-                } else if (name.length > 12) {
-                    username.style.fontSize = '1.3rem';
-                } else {
-                    username.style.fontSize = '1.6rem';
-                }
-            }
+            // After successful update, disable editing again
+            editMode = false;
+            editBtn.textContent = 'Edit Profile';
+            phoneInput.setAttribute('readonly', true);
+            addressInput.setAttribute('readonly', true);
+            emailInput.setAttribute('readonly', true);
+            nameInput.setAttribute('readonly', true);
+            updateBtn.disabled = true;
         });
     </script>
 {% endblock %}

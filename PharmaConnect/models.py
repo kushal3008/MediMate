@@ -9,6 +9,8 @@ class Chemist(db.Model,UserMixin):
     chemistName = db.Column(db.String,nullable=False)
     chemistEmail = db.Column(db.String,unique=True,nullable=False)
     password = db.Column(db.String,nullable=False)
+    contactNumber = db.Column(db.String)
+    address = db.Column(db.String)
 
     def __repr__(self):
             return ""
@@ -24,6 +26,9 @@ class Doctor(db.Model,UserMixin):
     doctorName = db.Column(db.String,nullable=False)
     doctorEmail = db.Column(db.String,unique=True,nullable=False)
     password = db.Column(db.String,nullable=False)
+    address = db.Column(db.String)
+    contactNumber = db.Column(db.String)
+    specialization = db.Column(db.String)
 
     def __repr__(self):
             return ""

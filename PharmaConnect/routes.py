@@ -185,15 +185,55 @@ def register_routes(app,db,bcrypt):
         session.pop('user_type',None)
         return redirect('/')
     
-    @app.route('/chemist')
+    @app.route('/chemist',methods=['GET','POST'])
     @login_required
     def chemist():
-        return render_template('chemist.html')
+        chemist = Chemist.query.get(current_user.chemistId)
+        if request.method == "POST":
+            contactno = request.form.get('company_phone')
+            address = request.form.get('shop_address')
+            if chemist:
+                chemist.contactNumber = str(contactno)
+                chemist.address = str(address)
+                db.session.commit()
+            return render_template('chemist.html',
+                                   name = chemist.shopname,
+                                   address = chemist.address,
+                                   email = chemist.chemistEmail,
+                                   phone = chemist.contactNumber)
+        else:
+            return render_template('chemist.html',
+                                   name = chemist.shopname,
+                                   address = chemist.address,
+                                   email = chemist.chemistEmail,
+                                   phone = chemist.contactNumber)
     
-    @app.route('/doctor')
+    @app.route('/doctor',methods=['GET','POST'])
     @login_required
     def doctor():
-        return render_template('doctor.html')
+        doctor = Doctor.query.get(current_user.doctorId)
+        if request.method == "POST":
+            contactno = request.form.get('contact_number')
+            specialization = request.form.get('doctor_specialization')
+            address = request.form.get('clinic_address')
+            if doctor:
+                doctor.contactNumber = str(contactno)
+                doctor.specialization = str(specialization)
+                doctor.address = str(address)
+                db.session.commit()
+            return render_template('doctor.html',
+                                   name = doctor.doctorName,
+                                   email = doctor.doctorEmail,
+                                   phone = doctor.contactNumber,
+                                   address = doctor.address,
+                                   specialization = doctor.specialization)
+        else:
+            return render_template('doctor.html',
+                                   name = doctor.doctorName,
+                                   email = doctor.doctorEmail,
+                                   phone = doctor.contactNumber,
+                                   address = doctor.address,
+                                   specialization = doctor.specialization)
     
     @app.route('/patient',methods=['GET','POST'])
     @login_required
