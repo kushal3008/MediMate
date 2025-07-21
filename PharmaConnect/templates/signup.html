@@ -80,8 +80,7 @@
                         <label for="patient-name">Patient Name</label>
                     </div>
                     <div class="form-group">
-                        <input type="date" name="patientdob" id="patient-dob" required>
-                        <label for="patient-dob">Date of Birth</label>
+                        <input type="text" placeholder="Enter date of birth" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'" name="patientdob" id="patient-dob" required>
                     </div>
                     <div class="form-group">
                         <input type="email" name="patientemail" id="patient-email-signup" required>

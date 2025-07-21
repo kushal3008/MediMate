@@ -777,7 +777,6 @@
                 editBtn.textContent = 'Cancel Edit';
                 phoneInput.removeAttribute('readonly');
                 addressInput.removeAttribute('readonly');
-                emailInput.removeAttribute('readonly');
                 nameInput.removeAttribute('readonly');
                 specializationInput.removeAttribute('readonly');
                 updateBtn.disabled = false;
@@ -789,8 +788,7 @@
                 nameInput.setAttribute('readonly', true);
                 specializationInput.setAttribute('readonly', true);
                 updateBtn.disabled = true;
-                // Optionally, reset values to original if canceling
-                // profileForm.reset();
+                profileForm.reset();
             }
         });
 

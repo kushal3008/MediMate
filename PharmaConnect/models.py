@@ -1,5 +1,6 @@
 from app import db
 from flask_login import UserMixin
+from sqlalchemy import UniqueConstraint
 
 class Chemist(db.Model,UserMixin):
     __tablename__ = 'chemist'
@@ -52,5 +53,20 @@ class Patient(db.Model,UserMixin):
     def get_id(self):
           return self.patientId
     
-      
-	  
+class Medicine(db.Model):
+    __tablename__ = 'medicine'
+    medicineId = db.Column(db.Integer,primary_key=True)
+    medicineName = db.Column(db.String,nullable=False)
+    batchNo = db.Column(db.String,nullable=False)
+    medicineQuantity = db.Column(db.Integer,nullable=False)
+    medicinePrice = db.Column(db.Integer,nullable=False)
+    companyName = db.Column(db.String,nullable=False)
+    expiryDate = db.Column(db.Date,nullable=False)
+
+    
+    	
+    def __repr__(self):
+          return ""
+    
+    def get_id(self):
+          return self.medicineId

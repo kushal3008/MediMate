@@ -356,14 +356,17 @@ editBtn.addEventListener('click', function() {
         editBtn.textContent = 'Cancel Edit';
         phoneInput.removeAttribute('readonly');
         addressInput.removeAttribute('readonly');
+        dobInput.removeAttribute('readonly');
+        nameInput.removeAttribute('readonly');
         updateBtn.disabled = false;
     } else {
         editBtn.textContent = 'Edit Profile';
         phoneInput.setAttribute('readonly', true);
         addressInput.setAttribute('readonly', true);
+        nameInput.setAttribute('readonly', true);
+        dobInput.setAttribute('readonly', true);
         updateBtn.disabled = true;
-        // Optionally, reset values to original if canceling
-        // profileForm.reset();
+        profileForm.reset()
     }
 });
 

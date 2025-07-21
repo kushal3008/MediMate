@@ -621,30 +621,30 @@
             </div>
         </section>
         <section id="register-drug" class="section register-drug-section">
-            <h2>Register New Drug</h2>
+            <h2>Register New Medicine</h2>
             <form id="register-drug-form" onsubmit="registerDrug(event)">
                 <div class="form-group center-label">
                     <input type="text" id="drug-name" placeholder="Enter medicine name" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="text" id="drug-id" placeholder="Enter medicine ID" required>
+                    <input type="number" id="drug-quantity" placeholder="Enter quantity" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="number" id="drug-quantity" placeholder="Enter quantity" min="1" required>
+                    <input type="number" id="batch-no" placeholder="Enter batch number" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="date" id="drug-expiry" placeholder="Enter expiry date" required>
+                    <input type="text" placeholder="Enter expiry date" id="drug-expiry" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
                 </div>
                 <div class="form-group center-label">
-                    <input type="number" id="drug-price" placeholder="Enter price" min="0" step="0.01" required>
+                    <input type="number" id="drug-price" placeholder="Enter price" required>
                 </div>
                 <div class="form-group center-label">
                     <input type="text" id="company-name" placeholder="Enter company name" required>
                 </div>
-                <button type="submit" class="btn">Register Drug</button>
+                <button type="submit" class="btn">Register Medicine</button>
             </form>
             <div id="register-drug-success" class="success-message" style="display: none;">
-                Drug registered successfully!
+                Medicine registered successfully!
             </div>
         </section>
         <section id="profile" class="section">
@@ -719,7 +719,6 @@
                 editBtn.textContent = 'Cancel Edit';
                 phoneInput.removeAttribute('readonly');
                 addressInput.removeAttribute('readonly');
-                emailInput.removeAttribute('readonly');
                 nameInput.removeAttribute('readonly');
                 updateBtn.disabled = false;
             } else {
@@ -729,8 +728,7 @@
                 emailInput.setAttribute('readonly', true);
                 nameInput.setAttribute('readonly', true);
                 updateBtn.disabled = true;
-                // Optionally, reset values to original if canceling
-                // profileForm.reset();
+                profileForm.reset();
             }
         });
 
