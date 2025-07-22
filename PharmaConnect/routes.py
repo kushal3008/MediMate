@@ -1,7 +1,8 @@
 from flask import render_template,request,redirect,session,flash
-from models import Chemist,Doctor,Patient
+from models import Chemist,Doctor,Patient,Medicine
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from api import YOUR_API_KEY
 
 def register_routes(app,db,bcrypt):
@@ -50,6 +51,9 @@ def register_routes(app,db,bcrypt):
                 stream=False,
             )
             return chat_completion.choices[0].message.content
+    def get_date(start_date,n_month):
+        date = start_date + relativedelta(months=n_month)
+        return date
         
     @app.route('/')
     def home():
@@ -191,13 +195,40 @@ def register_routes(app,db,bcrypt):
         if session['user_type'] == "chemist":
             chemist = Chemist.query.get(current_user.chemistId)
             if request.method == "POST":
-                contactno = request.form.get('company_phone')
-                address = request.form.get('shop_address')
-                if chemist:
-                    chemist.contactNumber = str(contactno)
-                    chemist.address = str(address)
+                formName = request.form.get('form_name')
+                if formName == "profile":
+                    contactno = request.form.get('company_phone')
+                    address = request.form.get('shop_address')
+                    if chemist:
+                        chemist.contactNumber = str(contactno)
+                        chemist.address = str(address)
+                        db.session.commit()
+                    return render_template('chemist.html',
+                                        name = chemist.shopname,
+                                        address = chemist.address,
+                                        email = chemist.chemistEmail,
+                                        phone = chemist.contactNumber)
+                elif formName == "register_med":
+                    medicineName = request.form.get('medicine_name')
+                    medicineQuantity = int(request.form.get('medicine_quantity'))
+                    batchNo = request.form.get('batch_number')
+                    manufactureDateStr = request.form.get('manufacturing_date')
+                    manufactureDate = datetime.strptime(manufactureDateStr, "%Y-%m-%d").date()
+                    medicinePrice = request.form.get('medicine_price')
+                    companyName = request.form.get('company_name')
+                    expireMonths = int(request.form.get('expiry_date'))
+                    expiryDate = get_date(manufactureDate,expireMonths)
+
+                    medicine = Medicine(medicineName=medicineName,
+                                        batchNo=batchNo,
+                                        medicineQuantity=medicineQuantity,
+                                        medicinePrice=medicinePrice,
+                                        companyName=companyName,
+                                        manufactureDate=manufactureDate,
+                                        expiryDate=expiryDate)
+                    db.session.add(medicine)
                     db.session.commit()
-                return render_template('chemist.html',
+                    return render_template('chemist.html',
                                     name = chemist.shopname,
                                     address = chemist.address,
                                     email = chemist.chemistEmail,

@@ -622,24 +622,28 @@
         </section>
         <section id="register-drug" class="section register-drug-section">
             <h2>Register New Medicine</h2>
-            <form id="register-drug-form" onsubmit="registerDrug(event)">
+            <form id="register-drug-form" name="register_med" method="post" action="{{ url_for('chemist',_anchor='register-drug')}}">
+                <input type="hidden" name="form_name" value="register_med">
                 <div class="form-group center-label">
-                    <input type="text" id="drug-name" placeholder="Enter medicine name" required>
+                    <input name="medicine_name" type="text" id="drug-name" placeholder="Enter medicine name" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="number" id="drug-quantity" placeholder="Enter quantity" required>
+                    <input name="medicine_quantity" type="number" id="drug-quantity" placeholder="Enter quantity" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="number" id="batch-no" placeholder="Enter batch number" required>
+                    <input name="batch_number" type="text" id="batch-no" placeholder="Enter batch number" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="text" placeholder="Enter expiry date" id="drug-expiry" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+                    <input name="manufacturing_date" type="text" placeholder="Enter manufacturing date" id="drug-expiry" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
                 </div>
                 <div class="form-group center-label">
-                    <input type="number" id="drug-price" placeholder="Enter price" required>
+                    <input name="expiry_date" type="number" id="drug-price" placeholder="Months left to expire from manufacturing date" required>
                 </div>
                 <div class="form-group center-label">
-                    <input type="text" id="company-name" placeholder="Enter company name" required>
+                    <input name="medicine_price" type="number" id="drug-price" step="any" placeholder="Enter price" required>
+                </div>
+                <div class="form-group center-label">
+                    <input name="company_name" type="text" id="company-name" placeholder="Enter company name" required>
                 </div>
                 <button type="submit" class="btn">Register Medicine</button>
             </form>
@@ -649,7 +653,8 @@
         </section>
         <section id="profile" class="section">
             <h2>Chemist Profile</h2>
-            <form id="profile-form" class="profile-form" method="post" action="{{ url_for('chemist',_anchor='profile')}}">
+            <form name="profile" id="profile-form" class="profile-form" method="post" action="{{ url_for('chemist',_anchor='profile')}}">
+                <input type="hidden" name="form_name" value="profile">
                 <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
                 <div class="form-group center-label">
                     <input type="text" name="shopname" id="company-name" placeholder="Enter Shop Name" required readonly value="{{ name }}">
