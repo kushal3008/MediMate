@@ -579,18 +579,14 @@
                 <div class="billing-section">
                     <h2>Add Medicines</h2>
                     <div class="form-group center-label">
+                        <form name="billing-system" id="billing-system-form" class="billing-system-form" method="post" action="{{ url_for('chemist',_anchor='billing')}}">
                         <input type="text" id="search-drug" list="available-medicines" placeholder="Search medicines..." required>
                         <datalist id="available-medicines">
-                            <option value="Paracetamol 500mg">
-                            <option value="Amoxicillin 250mg">
-                            <option value="Ibuprofen 400mg">
-                            <option value="Omeprazole 20mg">
-                            <option value="Cetirizine 10mg">
-                            <option value="Aspirin 75mg">
-                            <option value="Metformin 500mg">
-                            <option value="Atorvastatin 20mg">
-                            <option value="Losartan 50mg">
-                            <option value="Metoprolol 25mg">
+                            {% if medicineList %}
+                                {% for medicine in medicineList %}
+                                    <option value="{{ medicine.medicineName }}"></option>
+                                {% endfor %}
+                            {% endif %}
                         </datalist>
                     </div>
                     <div class="form-group center-label quantity-group">
@@ -598,6 +594,7 @@
                         <input type="number" id="quantity" value="1" min="1" max="50" required>
                         <button type="button" class="quantity-btn" onclick="incrementQuantity()">+</button>
                     </div>
+                </form>
                     <button class="btn" onclick="addToCart()">Add to Cart</button>
                 </div>
 
@@ -751,5 +748,18 @@
             nameInput.setAttribute('readonly', true);
             updateBtn.disabled = true;
         });
+        
+        function incrementQuantity() {
+            const quantityInput = document.getElementById('quantity');
+            quantityInput.value = parseInt(quantityInput.value) + 1;
+        }
+
+        function decrementQuantity() {
+            const quantityInput = document.getElementById('quantity');
+            if (parseInt(quantityInput.value) > 1) {
+                quantityInput.value = parseInt(quantityInput.value) - 1;
+            }
+        }
+        
     </script>
 {% endblock %}

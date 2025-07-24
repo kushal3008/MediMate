@@ -634,6 +634,7 @@
         <section id="profile" class="section">
             <h2>Doctor Profile</h2>
             <form id="profile-form" class="profile-form" method="POST" action="{{ url_for('doctor',_anchor='profile') }}">
+                <input type="hidden" name="form_name" value="profile">
                 <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
                 <div class="form-group">
                     <input type="text" name="doctor_name" id="doctor-name" placeholder="Full Name" required readonly value="{{ name }}">

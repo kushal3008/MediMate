@@ -1,5 +1,5 @@
 from flask import render_template,request,redirect,session,flash
-from models import Chemist,Doctor,Patient,Medicine
+from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -7,6 +7,7 @@ from api import YOUR_API_KEY
 
 def register_routes(app,db,bcrypt):
 
+    #Chat bot for user 
     def bot(input):
 
         message = input.lower()
@@ -51,19 +52,24 @@ def register_routes(app,db,bcrypt):
                 stream=False,
             )
             return chat_completion.choices[0].message.content
+    
+    # Get date for expiry based on months
     def get_date(start_date,n_month):
         date = start_date + relativedelta(months=n_month)
         return date
-        
+
+    # Homepage
     @app.route('/')
     def home():
         return render_template('homepage.html')
     
+    # Singup Page
     @app.route('/signup',methods = ['GET','POST'])
     def signup():
         if request.method == "GET":
             return render_template('signup.html')
         elif request.method == "POST":
+            # Chemist Signup
             user_type = request.form.get('user_type')
             if user_type == "chemist":
                 shopname = request.form.get('shopname')
@@ -79,6 +85,7 @@ def register_routes(app,db,bcrypt):
 
                 return redirect('/login')
             
+            # Doctor Signup
             elif user_type == "doctor":
                 hospitalname = request.form.get('hospitalname')
                 doctorName = request.form.get('doctorname')
@@ -93,6 +100,7 @@ def register_routes(app,db,bcrypt):
 
                 return redirect('/login')
 
+            # Patient Signup
             elif user_type == "patient":
                 patientName = request.form.get('patientname')
                 patientEmail = request.form.get('patientemail').lower()
@@ -108,11 +116,10 @@ def register_routes(app,db,bcrypt):
 
                 return redirect('/login')
 
-            
             else:
                 return "Something Went Worng!"
 
-    
+    # Login Page
     @app.route('/login',methods = ['GET','POST'])
     def login():
 
@@ -123,6 +130,7 @@ def register_routes(app,db,bcrypt):
         elif request.method == "POST":
             user_type = request.form.get('user_type')
 
+            # Chemist Login
             if user_type == "chemist":
                 chemistEmail = request.form.get('chemist_email').lower()
                 cpassword = request.form.get('chemist_password')
@@ -140,7 +148,8 @@ def register_routes(app,db,bcrypt):
                     session['login_error'] = "Wrong Password"
                     session['active_tab'] = "chemist"
                     return redirect('/login')
-
+                
+            # Doctor Login
             elif user_type == "doctor":
                 doctorEmail = request.form.get('doctor_email').lower()
                 dpassword = request.form.get('doctor_password')
@@ -158,7 +167,8 @@ def register_routes(app,db,bcrypt):
                     session['login_error'] = "Wrong Password"
                     session['active_tab'] = "doctor"
                     return redirect('/login')
-                
+
+            # Patient Login    
             elif user_type == "patient":
 
                 patientEmail = request.form.get('patient_email').lower()
@@ -178,10 +188,10 @@ def register_routes(app,db,bcrypt):
                     session['active_tab'] = "patient"
                     return redirect('/login')
 
-
             else:
                 return "Something Went Wrong!"
-            
+
+    # Logout        
     @app.route('/logout')
     @login_required
     def logout():
@@ -189,13 +199,17 @@ def register_routes(app,db,bcrypt):
         session.pop('user_type',None)
         return redirect('/')
     
+    # Chemist Page
     @app.route('/chemist',methods=['GET','POST'])
     @login_required
     def chemist():
         if session['user_type'] == "chemist":
             chemist = Chemist.query.get(current_user.chemistId)
+            medicineList = Medicine.query.all()
             if request.method == "POST":
                 formName = request.form.get('form_name')
+
+                # Profile Page
                 if formName == "profile":
                     contactno = request.form.get('company_phone')
                     address = request.form.get('shop_address')
@@ -207,7 +221,10 @@ def register_routes(app,db,bcrypt):
                                         name = chemist.shopname,
                                         address = chemist.address,
                                         email = chemist.chemistEmail,
-                                        phone = chemist.contactNumber)
+                                        phone = chemist.contactNumber,
+                                        medicineList=medicineList)
+                
+                # Register Medicine Page    
                 elif formName == "register_med":
                     medicineName = request.form.get('medicine_name')
                     medicineQuantity = int(request.form.get('medicine_quantity'))
@@ -225,43 +242,51 @@ def register_routes(app,db,bcrypt):
                                         medicinePrice=medicinePrice,
                                         companyName=companyName,
                                         manufactureDate=manufactureDate,
-                                        expiryDate=expiryDate)
+                                        expiryDate=expiryDate,
+                                        medicineList=medicineList)
                     db.session.add(medicine)
                     db.session.commit()
                     return render_template('chemist.html',
                                     name = chemist.shopname,
                                     address = chemist.address,
                                     email = chemist.chemistEmail,
-                                    phone = chemist.contactNumber)
+                                    phone = chemist.contactNumber,
+                                    medicineList=medicineList)
             else:
                 return render_template('chemist.html',
                                     name = chemist.shopname,
                                     address = chemist.address,
                                     email = chemist.chemistEmail,
-                                    phone = chemist.contactNumber)
+                                    phone = chemist.contactNumber,
+                                    medicineList=medicineList)
         else:
             return redirect('/permission')
     
+    # Doctor Page
     @app.route('/doctor',methods=['GET','POST'])
     @login_required
     def doctor():
         if session['user_type'] == "doctor":
             doctor = Doctor.query.get(current_user.doctorId)
             if request.method == "POST":
-                contactno = request.form.get('contact_number')
-                specialization = request.form.get('doctor_specialization')
-                address = request.form.get('clinic_address')
-                if doctor:
-                    doctor.contactNumber = str(contactno)
-                    doctor.specialization = str(specialization)
-                    doctor.address = str(address)
-                    db.session.commit()
-                return render_template('doctor.html',
-                                    name = doctor.doctorName,
-                                    email = doctor.doctorEmail,
-                                    phone = doctor.contactNumber,
-                                    address = doctor.address,
-                                    specialization = doctor.specialization)
+                formName = request.form.get('form_name')    
+
+                # Profile Page
+                if formName == "profile":
+                    contactno = request.form.get('contact_number')
+                    specialization = request.form.get('doctor_specialization')
+                    address = request.form.get('clinic_address')
+                    if doctor:
+                        doctor.contactNumber = str(contactno)
+                        doctor.specialization = str(specialization)
+                        doctor.address = str(address)
+                        db.session.commit()
+                    return render_template('doctor.html',
+                                        name = doctor.doctorName,
+                                        email = doctor.doctorEmail,
+                                        phone = doctor.contactNumber,
+                                        address = doctor.address,
+                                        specialization = doctor.specialization)
             else:
                 return render_template('doctor.html',
                                     name = doctor.doctorName,
@@ -272,6 +297,7 @@ def register_routes(app,db,bcrypt):
         else:
             return redirect('/permission')
     
+    # Patient Page
     @app.route('/patient',methods=['GET','POST'])
     @login_required
     def patient():
@@ -285,23 +311,27 @@ def register_routes(app,db,bcrypt):
                                     phone=patient.contactNumber,
                                     address = patient.address)
             else:
-                contactno = request.form.get('patient_phone')
-                address = request.form.get('patient_address')
-                if patient:
-                    patient.contactNumber = str(contactno)
-                    patient.address = str(address)
-                    db.session.commit()
-                return render_template('patient.html',
-                                    name=patient.patientName,
-                                    email=patient.patientEmail,
-                                    dob=patient.patientdob,
-                                    phone=patient.contactNumber,
-                                    address = patient.address)
+                formName = request.form.get('form_name')
+
+                # Profile Page
+                if formName == "profile":
+                    contactno = request.form.get('patient_phone')
+                    address = request.form.get('patient_address')
+                    if patient:
+                        patient.contactNumber = str(contactno)
+                        patient.address = str(address)
+                        db.session.commit()
+                    return render_template('patient.html',
+                                        name=patient.patientName,
+                                        email=patient.patientEmail,
+                                        dob=patient.patientdob,
+                                        phone=patient.contactNumber,
+                                        address = patient.address)
         else:
             return redirect('/permission')
 
 
-    
+    # Chatbot Route
     @app.route('/chat',methods=['GET','POST'])
     @login_required
     def chat():
@@ -312,6 +342,8 @@ def register_routes(app,db,bcrypt):
             bot_response = bot(user_input)
             return render_template('chatbot_section.html',user_input = user_input,bot_response=bot_response)
     
+
+    # Permission error page
     @app.route('/permission')
     def permission():
         return render_template('permission.html')

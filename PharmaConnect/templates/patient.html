@@ -282,6 +282,7 @@
         <h2>Patient Profile</h2>
         <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
         <form id="profile-form" class="profile-form" method="post" action="{{ url_for('patient',_anchor='profile') }}">
+            <input type="hidden" name="form_name" value="profile">
             <div class="form-group">
                 <input type="text" id="patient-name" placeholder="Full Name" required readonly value="{{name}}">
             </div>
