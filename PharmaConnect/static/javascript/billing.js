@@ -3,16 +3,29 @@ let registeredDrugs = [];
 let cart = [];
 let companyProfile = null;
 
-// Function to initialize the drug list
-function initializeDrugList() {
-    // This would typically fetch from a backend
-    // For now, we'll use the drugs from localStorage if available
-    const storedDrugs = localStorage.getItem('registeredDrugs');
-    if (storedDrugs) {
-        registeredDrugs = JSON.parse(storedDrugs);
-        updateDrugList();
+// Function to fetch medicines data from your Flask API
+async function fetchMedicines() {
+    try {
+        const response = await fetch('/search-medicine'); // Make GET request to your API endpoint
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const medicines = await response.json(); // Parse the JSON response into a JavaScript array of objects
+        console.log("Medicines fetched from API:", medicines);
+        return medicines; // Return the JavaScript array
+    } catch (error) {
+        console.error("Error fetching medicines:", error);
+        return []; // Return an empty array on error
     }
 }
+
+// Example usage:
+// Call this function when you need the data, e.g., on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    registeredDrugs = await fetchMedicines();
+    updateDrugList
+    console.log("Registered Drugs ready for use:", registeredDrugs);
+});
 
 // Function to update the drug datalist
 function updateDrugList() {
@@ -45,29 +58,39 @@ function updatePrice() {
 // Function to add item to cart
 function addToCart() {
     const searchInput = document.getElementById('search-drug');
-    const quantityInput = document.getElementById('drug-quantity');
+    const quantityInput = document.getElementById('quantity'); 
     const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
-    
+
     if (!selectedDrug) {
         alert('Please select a valid drug');
         return;
     }
-    
+
     const quantity = parseInt(quantityInput.value);
     if (!quantity || quantity < 1) {
         alert('Please enter a valid quantity');
         return;
     }
-    
-    const cartItem = {
-        id: Date.now(), // unique ID for the cart item
-        name: selectedDrug.name,
-        quantity: quantity,
-        price: selectedDrug.price,
-        total: (selectedDrug.price * quantity)
-    };
-    
-    cart.push(cartItem);
+
+    // Check if the drug already exists in the cart
+    const existingCartItem = cart.find(item => item.name === selectedDrug.name);
+
+    if (existingCartItem) {
+        // If it exists, update the quantity and total
+        existingCartItem.quantity += quantity;
+        existingCartItem.total = (existingCartItem.price * existingCartItem.quantity);
+    } else {
+        // If it doesn't exist, add it as a new item
+        const cartItem = {
+            id: Date.now(), // unique ID for the cart item
+            name: selectedDrug.name,
+            quantity: quantity,
+            price: selectedDrug.price,
+            total: (selectedDrug.price * quantity)
+        };
+        cart.push(cartItem);
+    }
+
     updateCartDisplay();
     clearForm();
 }
@@ -105,7 +128,7 @@ function updateCartDisplay() {
 // Function to clear the form
 function clearForm() {
     document.getElementById('search-drug').value = '';
-    document.getElementById('drug-quantity').value = '';
+    document.getElementById('quantity').value = '1';
     document.getElementById('drug-price').textContent = '0.00';
 }
 
@@ -159,10 +182,10 @@ function loadCompanyProfile() {
 
 // Function to generate bill HTML
 function generateBillHTML(customerName, items, total) {
-    if (!companyProfile) {
-        alert('Please set up your company profile first!');
-        return null;
-    }
+    // if (!companyProfile) {
+    //     alert('Please set up your company profile first!');
+    //     return null;
+    // }
 
     const date = new Date().toLocaleDateString();
     const time = new Date().toLocaleTimeString();
@@ -337,8 +360,6 @@ async function generateAndSendBill() {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    initializeDrugList();
-    loadCompanyProfile();
     
     // Add event listeners for price updates
     document.getElementById('search-drug').addEventListener('input', updatePrice);

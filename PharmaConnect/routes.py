@@ -1,4 +1,4 @@
-from flask import render_template,request,redirect,session,flash
+from flask import render_template,request,redirect,session,flash,jsonify,url_for,json
 from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime
@@ -206,6 +206,10 @@ def register_routes(app,db,bcrypt):
         if session['user_type'] == "chemist":
             chemist = Chemist.query.get(current_user.chemistId)
             medicineList = Medicine.query.all()
+            med = []
+            for i in medicineList:
+                med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
+            
             if request.method == "POST":
                 formName = request.form.get('form_name')
 
@@ -238,12 +242,11 @@ def register_routes(app,db,bcrypt):
 
                     medicine = Medicine(medicineName=medicineName,
                                         batchNo=batchNo,
-                                        medicineQuantity=medicineQuantity,
+                                        stock=medicineQuantity,
                                         medicinePrice=medicinePrice,
                                         companyName=companyName,
                                         manufactureDate=manufactureDate,
-                                        expiryDate=expiryDate,
-                                        medicineList=medicineList)
+                                        expiryDate=expiryDate)
                     db.session.add(medicine)
                     db.session.commit()
                     return render_template('chemist.html',
@@ -347,3 +350,66 @@ def register_routes(app,db,bcrypt):
     @app.route('/permission')
     def permission():
         return render_template('permission.html')
+    
+    # Medicine Data Route
+    @app.route('/search-medicine')
+    def search_medicine():
+        medicineList = Medicine.query.all()
+        med = []
+        for i in medicineList:
+            med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
+        return jsonify(med)
+
+    @app.route('/generate-bill',methods=['POST'])
+    @login_required
+    def generateBill():
+        data = request.form.get('billing_cart')
+        name = request.form.get('customer_name')
+        email = request.form.get('customer_email')
+        billAmount = request.form.get('bill_amount')
+        if data:
+            cart = json.loads(data)
+            billId = Sales.query.filter(Sales.chemistId == current_user.chemistId).order_by(Sales.salesId.desc()).limit(1).first()
+            if billId:
+                billId = billId.salesId + 1
+            else:
+                billId = 1
+                
+            for i in cart:
+                medicine_name = i['name']
+                quantity = i['quantity']
+                totalPrice = i['total']
+                pricePerUnit = i['price']
+                date = datetime.now().date()
+                chemistId = current_user.chemistId
+
+                # Sales Input
+                sales = Sales(billId=billId,name=medicine_name,quantity=quantity,pricePerUnit=pricePerUnit,totalPrice=totalPrice,date=date,chemistId=chemistId)
+                db.session.add(sales)
+
+                medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
+                medicine.stock -= quantity
+
+                db.session.commit()
+            
+            # Checks Customer
+            customer = Customers.query.filter(Customers.customerEmail == email).first()
+            if customer is None:
+                customer = Customers(customerEmail=email,customerName=name)
+                db.session.add(customer)
+                db.session.commit()
+            else:
+                customerId = customer.customerId
+
+            # Purchase table input
+            purchase = Purchase(customerId=customerId,billAmount=billAmount,chemistId=chemistId,billId=billId)
+            db.session.add(purchase)
+            db.session.commit()
+
+        else:
+            pass
+
+
+
+
+        return redirect(url_for('chemist')+'#billing')

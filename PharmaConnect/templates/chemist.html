@@ -579,7 +579,7 @@
                 <div class="billing-section">
                     <h2>Add Medicines</h2>
                     <div class="form-group center-label">
-                        <form name="billing-system" id="billing-system-form" class="billing-system-form" method="post" action="{{ url_for('chemist',_anchor='billing')}}">
+                        <form name="billing-system" id="billing-system-form" class="billing-system-form" method="post" action="{{ url_for('generateBill')}}">
                         <input type="text" id="search-drug" list="available-medicines" placeholder="Search medicines..." required>
                         <datalist id="available-medicines">
                             {% if medicineList %}
@@ -594,8 +594,12 @@
                         <input type="number" id="quantity" value="1" min="1" max="50" required>
                         <button type="button" class="quantity-btn" onclick="incrementQuantity()">+</button>
                     </div>
-                </form>
+                    <input type="hidden" name="billing_cart" id="cart">
+                    <input type="hidden" name="customer_name" id="name">
+                    <input type="hidden" name="customer_email" id="email">
+                    <input type="hidden" name="bill_amount" id="total">
                     <button class="btn" onclick="addToCart()">Add to Cart</button>
+                </form>
                 </div>
 
                 <!-- Shopping Cart Section -->
@@ -760,6 +764,149 @@
                 quantityInput.value = parseInt(quantityInput.value) - 1;
             }
         }
-        
+
+        // Store for registered drugs and company profile
+        let registeredDrugs = [];
+        let cart = [];
+        let companyProfile = null;
+
+        // Function to fetch medicines data from your Flask API
+        async function fetchMedicines() {
+            try {
+                const response = await fetch('/search-medicine'); // Make GET request to your API endpoint
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const medicines = await response.json(); // Parse the JSON response into a JavaScript array of objects
+                console.log("Medicines fetched from API:", medicines);
+                return medicines; // Return the JavaScript array
+            } catch (error) {
+                console.error("Error fetching medicines:", error);
+                return []; // Return an empty array on error
+            }
+        }
+
+        // Example usage:
+        // Call this function when you need the data, e.g., on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            registeredDrugs = await fetchMedicines();
+            updateDrugList
+            console.log("Registered Drugs ready for use:", registeredDrugs);
+        });
+
+        // Function to update the drug datalist
+        function updateDrugList() {
+            const drugList = document.getElementById('drug-list');
+            drugList.innerHTML = '';
+            registeredDrugs.forEach(drug => {
+                const option = document.createElement('option');
+                option.value = drug.name;
+                option.setAttribute('data-price', drug.price);
+                drugList.appendChild(option);
+            });
+        }
+
+        // Function to update price when drug is selected
+        function updatePrice() {
+            const searchInput = document.getElementById('search-drug');
+            const quantityInput = document.getElementById('quantity');
+            const priceDisplay = document.getElementById('drug-price');
+            
+            const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
+            if (selectedDrug) {
+                const quantity = parseInt(quantityInput.value) || 0;
+                const totalPrice = (selectedDrug.price * quantity).toFixed(2);
+                priceDisplay.textContent = totalPrice;
+            } else {
+                priceDisplay.textContent = '0.00';
+            }
+        }
+
+        // Function to add item to cart
+        function addToCart() {
+
+            const searchInput = document.getElementById('search-drug');
+            const quantityInput = document.getElementById('quantity'); 
+            const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
+
+            if (!selectedDrug) {
+                alert('Please select a valid drug');
+                return;
+            }
+
+            const quantity = parseInt(quantityInput.value);
+            if (!quantity || quantity < 1) {
+                alert('Please enter a valid quantity');
+                return;
+            }
+
+            // Check if the drug already exists in the cart
+            const existingCartItem = cart.find(item => item.name === selectedDrug.name);
+
+            if (existingCartItem) {
+                // If it exists, update the quantity and total
+                existingCartItem.quantity += quantity;
+                existingCartItem.total = (existingCartItem.price * existingCartItem.quantity);
+            } else {
+                // If it doesn't exist, add it as a new item
+                const cartItem = {
+                    id: Date.now(), // unique ID for the cart item
+                    name: selectedDrug.name,
+                    quantity: quantity,
+                    price: selectedDrug.price,
+                    total: (selectedDrug.price * quantity)
+                };
+                cart.push(cartItem);
+            }
+
+            updateCartDisplay();
+            clearForm();
+        }
+
+        // Function to remove item from cart
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.id !== itemId);
+            updateCartDisplay();
+        }
+
+        // Function to update cart display
+        function updateCartDisplay() {
+            const cartContainer = document.getElementById('cart-items');
+            const totalAmount = document.getElementById('total-amount');
+            
+            cartContainer.innerHTML = '';
+            let total = 0;
+            
+            cart.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div>${item.name}</div>
+                    <div>${item.quantity}</div>
+                    <div>₹${item.total.toFixed(2)}</div>
+                    <button onclick="removeFromCart(${item.id})">×</button>
+                `;
+                cartContainer.appendChild(itemElement);
+                total += item.total;
+
+            });
+            
+            totalAmount.textContent = total.toFixed(2);
+        }
+
+        // Function to clear the form
+        function clearForm() {
+            document.getElementById('search-drug').value = '';
+            document.getElementById('quantity').value = '1';
+            document.getElementById('drug-price').textContent = '0.00';
+        }
+
+        function generateAndSendBill(){
+            document.getElementById('cart').value = JSON.stringify(cart);
+            document.getElementById('name').value = document.getElementById('customer-name').value
+            document.getElementById('email').value = document.getElementById('customer-email').value
+            document.getElementById('total').value = document.getElementById('total-amount').textContent
+            document.getElementById('billing-system-form').submit();
+        }
     </script>
 {% endblock %}

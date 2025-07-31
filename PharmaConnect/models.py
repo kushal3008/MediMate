@@ -55,12 +55,12 @@ class Patient(db.Model,UserMixin):
           return self.patientId
     
 class Medicine(db.Model):
-    __tablename__ = 'medicine'
+    __tablename__ = 'medicines'
 
     medicineId = db.Column(db.Integer,primary_key=True)
     medicineName = db.Column(db.String,nullable=False)
     batchNo = db.Column(db.String,nullable=False)
-    medicineQuantity = db.Column(db.Integer,nullable=False)
+    stock = db.Column(db.Integer,nullable=False)
     medicinePrice = db.Column(db.String,nullable=False)
     companyName = db.Column(db.String,nullable=False)
     expiryDate = db.Column(db.Date,nullable=False)
@@ -81,7 +81,6 @@ class Sales(db.Model):
       quantity = db.Column(db.Integer,nullable=False)
       pricePerUnit = db.Column(db.String,nullable=False)
       totalPrice = db.Column(db.Integer,nullable=False)
-      billAmount = db.Column(db.Integer,nullable=False)
       date = db.Column(db.Date,nullable=False)
       chemistId = db.Column(db.Integer,nullable=False)
 
@@ -104,11 +103,14 @@ class Customers(db.Model):
       def get_id(self):
           return self.customerId
       
-class Purchase():
+class Purchase(db.Model):
      __tablename__ = 'purchase'
 
      purchaseId = db.Column(db.Integer,primary_key=True)
+     billId = db.Column(db.Integer,nullable=False)
      customerId = db.Column(db.Integer,nullable=False)
+     billAmount = db.Column(db.Integer,nullable=False)
+     chemistId = db.Column(db.Integer,nullable=False)
 
      def __repr__(self):
           return ""
