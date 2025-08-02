@@ -1,9 +1,16 @@
-from flask import render_template,request,redirect,session,flash,jsonify,url_for,json
+from flask import render_template,request,redirect,session,flash,jsonify,url_for,json,make_response
 from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from api import YOUR_API_KEY
+from api import YOUR_API_KEY,BASE_64_STRING
+import pdfkit
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+
 
 def register_routes(app,db,bcrypt):
 
@@ -57,6 +64,40 @@ def register_routes(app,db,bcrypt):
     def get_date(start_date,n_month):
         date = start_date + relativedelta(months=n_month)
         return date
+    
+    def send_email_with_pdf(pdf,receiver,billId):
+        subject = "Subject: Your Medicine Bill"
+        body = "Thanks for purchase."
+        host = "smtp.gmail.com"
+        port = 465
+        user_name = "kushal.limit@gmail.com"  # Email address
+        password = "wbsi hlxp hizf xsnz"  # App password
+
+        context = ssl.create_default_context()
+
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = user_name
+        msg['To'] = receiver
+        msg['Subject'] = subject
+
+        # Attach the body of the email
+        msg.attach(MIMEText(body, 'plain'))
+
+         # FIX: Attach the PDF directly from the pdf_content variable.
+        # The 'with open(...)' block was removed as it was causing the error.
+        attach_part = MIMEApplication(pdf, _subtype="pdf")
+        # FIX: Provide a specific filename for the attachment. The original code used an undefined variable 'pdf_path'.
+        attach_part.add_header('Content-Disposition', 'attachment', filename=f"{billId}.pdf")
+        msg.attach(attach_part)
+
+        try:
+            with smtplib.SMTP_SSL(host, port, context=context) as server:
+                server.login(user_name, password)
+                server.sendmail(user_name, receiver, msg.as_string())
+            print("Email with PDF sent successfully!")
+        except Exception as e:
+            print(f"Failed to send email: {e}")
 
     # Homepage
     @app.route('/')
@@ -378,8 +419,8 @@ def register_routes(app,db,bcrypt):
             for i in cart:
                 medicine_name = i['name']
                 quantity = i['quantity']
-                totalPrice = i['total']
-                pricePerUnit = i['price']
+                totalPrice = float(i['total'])
+                pricePerUnit = float(i['price'])
                 date = datetime.now().date()
                 chemistId = current_user.chemistId
 
@@ -389,8 +430,6 @@ def register_routes(app,db,bcrypt):
 
                 medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
                 medicine.stock -= quantity
-
-                db.session.commit()
             
             # Checks Customer
             customer = Customers.query.filter(Customers.customerEmail == email).first()
@@ -398,18 +437,80 @@ def register_routes(app,db,bcrypt):
                 customer = Customers(customerEmail=email,customerName=name)
                 db.session.add(customer)
                 db.session.commit()
+                db.session.flush()  
+                db.session.refresh(customer)
+                customerId = customer.customerId
             else:
                 customerId = customer.customerId
 
             # Purchase table input
-            purchase = Purchase(customerId=customerId,billAmount=billAmount,chemistId=chemistId,billId=billId)
+            purchase = Purchase(customerId=customerId,billAmount=float(billAmount),chemistId=chemistId,billId=billId)
             db.session.add(purchase)
             db.session.commit()
 
+            if billId:
+                return redirect(url_for('generate_pdf', billId=billId))
+            else:
+                flash("Could not generate bill.")
+                return redirect(url_for('chemist') + '#billing')
+            
+
         else:
             pass
-
-
-
-
         return redirect(url_for('chemist')+'#billing')
+    
+    @app.route('/generate-pdf/<int:billId>')
+    @login_required
+    def generate_pdf(billId):
+        if session.get('user_type') != 'chemist':
+            return redirect(url_for('permission'))
+
+        # Fetch all necessary data for the bill from the database
+        chemist = Chemist.query.get(current_user.chemistId)
+        purchase_info = Purchase.query.filter_by(billId=billId, chemistId=current_user.chemistId).first()
+
+        if not purchase_info:
+            flash('Bill not found!')
+            return redirect(url_for('chemist'))
+
+        customer = Customers.query.get(purchase_info.customerId)
+        sales_items = Sales.query.filter_by(billId=billId, chemistId=current_user.chemistId).all()
+        
+        # FIX: Add a failsafe to ensure all prices are floats before rendering
+        # This handles cases where data might have been stored as a string in the DB
+        for item in sales_items:
+            item.pricePerUnit = float(item.pricePerUnit)
+            item.totalPrice = float(item.totalPrice)
+        purchase_info.billAmount = float(purchase_info.billAmount)
+
+
+        # Render an HTML template with the bill information
+        rendered_html = render_template('bill_template.html',
+                                        chemist=chemist,
+                                        customer=customer,
+                                        purchase=purchase_info,
+                                        sales_items=sales_items,
+                                        billId=billId,
+                                        img_string = BASE_64_STRING,
+                                        date=datetime.now().strftime("%Y-%m-%d"))
+
+        try:
+            # IMPORTANT: You must provide the correct path to the wkhtmltopdf executable.
+            # 1. Find where 'wkhtmltopdf.exe' is located on your system.
+            # 2. Replace the path below with your actual path.
+            # 3. Use a raw string (r'...') to avoid issues with backslashes.
+            path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+            config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+            
+            # Generate the PDF using the configuration
+            pdf = pdfkit.from_string(rendered_html, False, configuration=config)
+
+            if customer and customer.customerEmail:
+                send_email_with_pdf(pdf, customer.customerEmail, billId)
+
+            return redirect(url_for('chemist')+'#billing')
+
+        except IOError as e:
+            # This will catch the "No wkhtmltopdf executable found" error
+            print(f"Error generating PDF: {e}. Please ensure wkhtmltopdf is installed and the path in routes.py is correct.", 'error')
+            return redirect(url_for('chemist') + '#billing')
