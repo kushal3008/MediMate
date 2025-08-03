@@ -1,7 +1,7 @@
 from flask import render_template,request,redirect,session,flash,jsonify,url_for,json,make_response
 from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments
 from flask_login import login_user,logout_user,current_user,login_required
-from datetime import datetime
+from datetime import datetime,date,timedelta
 from dateutil.relativedelta import relativedelta
 from api import YOUR_API_KEY,BASE_64_STRING
 import pdfkit
@@ -277,25 +277,27 @@ def register_routes(app,db,bcrypt):
                     manufactureDateStr = request.form.get('manufacturing_date')
                     manufactureDate = datetime.strptime(manufactureDateStr, "%Y-%m-%d").date()
                     medicinePrice = request.form.get('medicine_price')
-                    companyName = request.form.get('company_name')
+                    companyName = request.form.get('company_name').upper()
                     expireMonths = int(request.form.get('expiry_date'))
                     expiryDate = get_date(manufactureDate,expireMonths)
 
-                    medicine = Medicine(medicineName=medicineName,
-                                        batchNo=batchNo,
-                                        stock=medicineQuantity,
-                                        medicinePrice=medicinePrice,
-                                        companyName=companyName,
-                                        manufactureDate=manufactureDate,
-                                        expiryDate=expiryDate)
-                    db.session.add(medicine)
-                    db.session.commit()
-                    return render_template('chemist.html',
-                                    name = chemist.shopname,
-                                    address = chemist.address,
-                                    email = chemist.chemistEmail,
-                                    phone = chemist.contactNumber,
-                                    medicineList=medicineList)
+                    try:
+                        medicine = Medicine(medicineName=medicineName,
+                                            batchNo=batchNo,
+                                            stock=medicineQuantity,
+                                            medicinePrice=medicinePrice,
+                                            companyName=companyName,
+                                            manufactureDate=manufactureDate,
+                                            expiryDate=expiryDate,
+                                            chemistId=current_user.chemistId)
+                        db.session.add(medicine)
+                        db.session.commit()
+                        flash(f'Medicine "{medicineName}" registered successfully!', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Error registering medicine: {str(e)}', 'error')
+                    
+                    return redirect(url_for('chemist')+'#register-drug')
             else:
                 return render_template('chemist.html',
                                     name = chemist.shopname,
@@ -400,13 +402,50 @@ def register_routes(app,db,bcrypt):
         for i in medicineList:
             med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
         return jsonify(med)
+    
+    # New Route to get expired and expiring medicines
+    @app.route('/expired-and-expiring-medicines')
+    @login_required
+    def expired_and_expiring_medicines():
+        if session['user_type'] != "chemist":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        today = date.today()
+        # End date for "about to expire" (today + 30 days)
+        in_30_days = today + timedelta(days=30)
+        
+        # Get medicines that are already expired
+        expired = Medicine.query.filter(
+            Medicine.expiryDate < today,
+            Medicine.chemistId == current_user.chemistId
+        ).all()
+        
+        # Get medicines that are about to expire in the next 30 days
+        about_to_expire = Medicine.query.filter(
+            Medicine.expiryDate.between(today, in_30_days),
+            Medicine.chemistId == current_user.chemistId
+        ).all()
+
+        # Helper function to serialize medicine objects
+        def serialize_medicine(med_list):
+            return [{
+                'name': m.medicineName,
+                'batch': m.batchNo,
+                'expiryDate': m.expiryDate.isoformat(),
+                'quantity': m.stock
+            } for m in med_list]
+        
+        return jsonify({
+            'expired': serialize_medicine(expired),
+            'about_to_expire': serialize_medicine(about_to_expire)
+        })
 
     @app.route('/generate-bill',methods=['POST'])
     @login_required
     def generateBill():
         data = request.form.get('billing_cart')
         name = request.form.get('customer_name')
-        email = request.form.get('customer_email')
+        email = request.form.get('customer_email').lower()
         billAmount = request.form.get('bill_amount')
         if data:
             cart = json.loads(data)
@@ -415,44 +454,47 @@ def register_routes(app,db,bcrypt):
                 billId = billId.salesId + 1
             else:
                 billId = 1
-                
-            for i in cart:
-                medicine_name = i['name']
-                quantity = i['quantity']
-                totalPrice = float(i['total'])
-                pricePerUnit = float(i['price'])
-                date = datetime.now().date()
-                chemistId = current_user.chemistId
-
-                # Sales Input
-                sales = Sales(billId=billId,name=medicine_name,quantity=quantity,pricePerUnit=pricePerUnit,totalPrice=totalPrice,date=date,chemistId=chemistId)
-                db.session.add(sales)
-
-                medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
-                medicine.stock -= quantity
             
-            # Checks Customer
-            customer = Customers.query.filter(Customers.customerEmail == email).first()
-            if customer is None:
-                customer = Customers(customerEmail=email,customerName=name)
-                db.session.add(customer)
+            try:
+                for i in cart:
+                    medicine_name = i['name']
+                    quantity = i['quantity']
+                    totalPrice = float(i['total'])
+                    pricePerUnit = float(i['price'])
+                    date = datetime.now().date()
+                    chemistId = current_user.chemistId
+
+                    # Sales Input
+                    sales = Sales(billId=billId,name=medicine_name,quantity=quantity,pricePerUnit=pricePerUnit,totalPrice=totalPrice,date=date,chemistId=chemistId)
+                    db.session.add(sales)
+
+                    medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
+                    medicine.stock -= quantity
+                
+                # Checks Customer
+                customer = Customers.query.filter(Customers.customerEmail == email).first()
+                if customer is None:
+                    customer = Customers(customerEmail=email,customerName=name)
+                    db.session.add(customer)
+                    db.session.commit()
+                    db.session.flush()  
+                    db.session.refresh(customer)
+                    customerId = customer.customerId
+                else:
+                    customerId = customer.customerId
+
+                # Purchase table input
+                purchase = Purchase(customerId=customerId,billAmount=float(billAmount),chemistId=chemistId,billId=billId)
+                db.session.add(purchase)
                 db.session.commit()
-                db.session.flush()  
-                db.session.refresh(customer)
-                customerId = customer.customerId
-            else:
-                customerId = customer.customerId
 
-            # Purchase table input
-            purchase = Purchase(customerId=customerId,billAmount=float(billAmount),chemistId=chemistId,billId=billId)
-            db.session.add(purchase)
-            db.session.commit()
-
-            if billId:
-                return redirect(url_for('generate_pdf', billId=billId))
-            else:
-                flash("Could not generate bill.")
-                return redirect(url_for('chemist') + '#billing')
+                if billId:
+                    return redirect(url_for('generate_pdf', billId=billId))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error generating bill: {str(e)}", 'error')
+                return redirect(url_for('chemist')+'#billing')
             
 
         else:
@@ -508,9 +550,11 @@ def register_routes(app,db,bcrypt):
             if customer and customer.customerEmail:
                 send_email_with_pdf(pdf, customer.customerEmail, billId)
 
+            flash('Bill generated and sent to customer successfully!', 'success')
             return redirect(url_for('chemist')+'#billing')
 
         except IOError as e:
             # This will catch the "No wkhtmltopdf executable found" error
             print(f"Error generating PDF: {e}. Please ensure wkhtmltopdf is installed and the path in routes.py is correct.", 'error')
+            flash('Error generating PDF.', 'error')
             return redirect(url_for('chemist') + '#billing')

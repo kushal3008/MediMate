@@ -3,6 +3,7 @@
 
 {% block content %}
     <style>
+        /* Your original CSS styles */
         body {
             background: var(--color-5);
             min-height: 100vh;
@@ -532,6 +533,125 @@
                 grid-template-columns: 1fr;
             }
         }
+        /* New popup styles */
+        .modal {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content.success .modal-header h2 {
+            color: #4CAF50;
+        }
+
+        .modal-content.error .modal-header h2 {
+            color: #f44336;
+        }
+        
+        .modal-header h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+
+        .modal-body p {
+            font-size: 1em;
+            color: var(--color-5);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+        }
+
+        .modal-footer .close-btn {
+            background-color: var(--color-4);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-footer .close-btn:hover {
+            background-color: var(--color-5);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* New styles for the Expired section */
+        .expired-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .expired-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .expired-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .expired-card h3 {
+            color: #f44336; /* Red for expired */
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        .expired-card.about-to-expire h3 {
+            color: #ff9800; /* Orange for about to expire */
+        }
+        .expired-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .expired-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .expired-item:last-child {
+            border-bottom: none;
+        }
+        .expired-item h4 {
+            margin: 0;
+            color: var(--color-5);
+        }
+        .expired-item p {
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
     </style>
 </head>
 <body>
@@ -598,7 +718,7 @@
                     <input type="hidden" name="customer_name" id="name">
                     <input type="hidden" name="customer_email" id="email">
                     <input type="hidden" name="bill_amount" id="total">
-                    <button class="btn" onclick="addToCart()">Add to Cart</button>
+                    <button class="btn" type="button" onclick="addToCart()">Add to Cart</button>
                 </form>
                 </div>
 
@@ -616,11 +736,32 @@
                             <input type="email" id="customer-email" placeholder="Enter customer email" required>
                         </div>
                         <div class="total">Total: ₹<span id="total-amount">0.00</span></div>
-                        <button class="btn" onclick="generateAndSendBill()" style="background-color: var(--color-4);">Generate & Send Bill</button>
+                        <button class="btn" type="button" onclick="prepareBillAndSubmit()" style="background-color: var(--color-4);">Generate & Send Bill</button>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- New Expired Section -->
+        <section id="expired" class="section">
+            <div class="expired-grid">
+                <div class="expired-card about-to-expire">
+                    <h3>Medicines About to Expire (Next 30 Days)</h3>
+                    <div class="expired-list" id="about-to-expire-list">
+                        <!-- Content will be populated by JavaScript -->
+                        <p>Loading...</p>
+                    </div>
+                </div>
+                <div class="expired-card">
+                    <h3>Expired Medicines</h3>
+                    <div class="expired-list" id="expired-list">
+                        <!-- Content will be populated by JavaScript -->
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="register-drug" class="section register-drug-section">
             <h2>Register New Medicine</h2>
             <form id="register-drug-form" name="register_med" method="post" action="{{ url_for('chemist',_anchor='register-drug')}}">
@@ -629,7 +770,7 @@
                     <input name="medicine_name" type="text" id="drug-name" placeholder="Enter medicine name" required>
                 </div>
                 <div class="form-group center-label">
-                    <input name="medicine_quantity" type="number" id="drug-quantity" placeholder="Enter quantity" required>
+                    <input name="medicine_quantity" type="number" id="drug-quantity" placeholder="Enter quantity of strips" required>
                 </div>
                 <div class="form-group center-label">
                     <input name="batch_number" type="text" id="batch-no" placeholder="Enter batch number" required>
@@ -673,41 +814,83 @@
             </form>
         </section>
     </main>
+    <!-- New Modal/Popup Structure -->
+    <div id="my-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="close-btn" onclick="hidePopup()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden flash messages container -->
+    <div id="flash-messages-container" style="display: none;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message" data-category="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
     <script>
         function showSection(event, sectionId) {
-        if (event) event.preventDefault();
+            if (event) event.preventDefault();
 
-        // Hide all sections
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active');
-        });
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
 
-        // Show selected section
-        const selectedSection = document.getElementById(sectionId);
-        if (selectedSection) selectedSection.classList.add('active');
+            // Show selected section
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) selectedSection.classList.add('active');
 
-        // Remove 'active' class from all links
-        document.querySelectorAll('.sidebar nav a').forEach(link => {
-            link.classList.remove('active');
-        });
+            // Remove 'active' class from all links
+            document.querySelectorAll('.sidebar nav a').forEach(link => {
+                link.classList.remove('active');
+            });
 
-        // Add 'active' class to clicked link
-        const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
-        if (activeLink) activeLink.classList.add('active');
+            // Add 'active' class to clicked link
+            const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+            if (activeLink) activeLink.classList.add('active');
 
-        // Update the URL hash
-        if (sectionId !== 'dashboard') {
-            history.replaceState(null, null, '#' + sectionId);
-        } else {
-            history.replaceState(null, null, '#dashboard');
+            // Update the URL hash
+            if (sectionId !== 'dashboard') {
+                history.replaceState(null, null, '#' + sectionId);
+            } else {
+                history.replaceState(null, null, '#dashboard');
+            }
+
+            // If the Expired section is shown, fetch data
+            if (sectionId === 'expired') {
+                fetchExpiredMedicines();
+            }
         }
-    }
 
-    // On page load, show the section from the anchor
-    window.addEventListener('DOMContentLoaded', () => {
-        const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
-        showSection(null, hash);
-    });
+        // On page load, show the section from the anchor and check for flash messages
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+            showSection(null, hash);
+            
+            // New logic to handle flash messages and popups
+            const flashContainer = document.getElementById('flash-messages-container');
+            const flashMessages = flashContainer.querySelectorAll('.flash-message');
+
+            if (flashMessages.length > 0) {
+                const message = flashMessages[0].textContent;
+                const category = flashMessages[0].dataset.category;
+                showPopup(category.charAt(0).toUpperCase() + category.slice(1), message, category);
+            }
+        });
+
         // Edit Profile button logic for Chemist
         const editBtn = document.getElementById('edit-profile-btn');
         const profileForm = document.getElementById('profile-form');
@@ -790,13 +973,13 @@
         // Call this function when you need the data, e.g., on page load
         document.addEventListener('DOMContentLoaded', async () => {
             registeredDrugs = await fetchMedicines();
-            updateDrugList
+            updateDrugList();
             console.log("Registered Drugs ready for use:", registeredDrugs);
         });
 
         // Function to update the drug datalist
         function updateDrugList() {
-            const drugList = document.getElementById('drug-list');
+            const drugList = document.getElementById('available-medicines');
             drugList.innerHTML = '';
             registeredDrugs.forEach(drug => {
                 const option = document.createElement('option');
@@ -806,51 +989,31 @@
             });
         }
 
-        // Function to update price when drug is selected
-        function updatePrice() {
-            const searchInput = document.getElementById('search-drug');
-            const quantityInput = document.getElementById('quantity');
-            const priceDisplay = document.getElementById('drug-price');
-            
-            const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
-            if (selectedDrug) {
-                const quantity = parseInt(quantityInput.value) || 0;
-                const totalPrice = (selectedDrug.price * quantity).toFixed(2);
-                priceDisplay.textContent = totalPrice;
-            } else {
-                priceDisplay.textContent = '0.00';
-            }
-        }
-
         // Function to add item to cart
         function addToCart() {
-
             const searchInput = document.getElementById('search-drug');
             const quantityInput = document.getElementById('quantity'); 
             const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
 
             if (!selectedDrug) {
-                alert('Please select a valid drug');
+                showPopup('Error', 'Please select a valid medicine from the list.', 'error');
                 return;
             }
 
             const quantity = parseInt(quantityInput.value);
             if (!quantity || quantity < 1) {
-                alert('Please enter a valid quantity');
+                showPopup('Error', 'Please enter a valid quantity.', 'error');
                 return;
             }
 
-            // Check if the drug already exists in the cart
             const existingCartItem = cart.find(item => item.name === selectedDrug.name);
 
             if (existingCartItem) {
-                // If it exists, update the quantity and total
                 existingCartItem.quantity += quantity;
                 existingCartItem.total = (existingCartItem.price * existingCartItem.quantity);
             } else {
-                // If it doesn't exist, add it as a new item
                 const cartItem = {
-                    id: Date.now(), // unique ID for the cart item
+                    id: Date.now(),
                     name: selectedDrug.name,
                     quantity: quantity,
                     price: selectedDrug.price,
@@ -898,15 +1061,114 @@
         function clearForm() {
             document.getElementById('search-drug').value = '';
             document.getElementById('quantity').value = '1';
-            document.getElementById('drug-price').textContent = '0.00';
         }
 
-        function generateAndSendBill(){
+        function prepareBillAndSubmit(){
+            const customerName = document.getElementById('customer-name').value;
+            const customerEmail = document.getElementById('customer-email').value;
+
+            if (cart.length === 0) {
+                showPopup('Error', 'The cart is empty. Please add items before generating a bill.', 'error');
+                return;
+            }
+
+            if (!customerName || !customerEmail) {
+                showPopup('Error', 'Please enter both the customer\'s name and email.', 'error');
+                return;
+            }
+
+            // Set hidden form fields
             document.getElementById('cart').value = JSON.stringify(cart);
-            document.getElementById('name').value = document.getElementById('customer-name').value
-            document.getElementById('email').value = document.getElementById('customer-email').value
-            document.getElementById('total').value = document.getElementById('total-amount').textContent
+            document.getElementById('name').value = customerName;
+            document.getElementById('email').value = customerEmail;
+            document.getElementById('total').value = document.getElementById('total-amount').textContent;
+
+            // Submit the form
             document.getElementById('billing-system-form').submit();
+        }
+        
+        // --- New Popup Functions ---
+        const modal = document.getElementById('my-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
+        
+        /**
+         * Shows a custom popup with a title and message.
+         * @param {string} title - The title of the popup.
+         * @param {string} message - The message to display in the popup.
+         * @param {string} type - 'success' or 'error' to change the styling.
+         */
+        function showPopup(title, message, type = 'success') {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalContent.classList.remove('success', 'error');
+            modalContent.classList.add(type);
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Hides the custom popup.
+         */
+        function hidePopup() {
+            modal.style.display = 'none';
+        }
+
+        // --- Expired Medicines Section Logic ---
+        async function fetchExpiredMedicines() {
+            const aboutToExpireList = document.getElementById('about-to-expire-list');
+            const expiredList = document.getElementById('expired-list');
+
+            // Clear previous content and show loading message
+            aboutToExpireList.innerHTML = "<p>Loading...</p>";
+            expiredList.innerHTML = "<p>Loading...</p>";
+
+            try {
+                const response = await fetch('/expired-and-expiring-medicines');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Populate the "About to Expire" list
+                if (data.about_to_expire.length > 0) {
+                    aboutToExpireList.innerHTML = ''; // Clear loading message
+                    data.about_to_expire.forEach(med => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'expired-item';
+                        itemElement.innerHTML = `
+                            <h4>${med.name} (Batch: ${med.batch})</h4>
+                            <p>Quantity: ${med.quantity}</p>
+                            <p>Expiry Date: ${med.expiryDate}</p>
+                        `;
+                        aboutToExpireList.appendChild(itemElement);
+                    });
+                } else {
+                    aboutToExpireList.innerHTML = "<p>No medicines are about to expire in the next 30 days.</p>";
+                }
+
+                // Populate the "Expired" list
+                if (data.expired.length > 0) {
+                    expiredList.innerHTML = ''; // Clear loading message
+                    data.expired.forEach(med => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'expired-item';
+                        itemElement.innerHTML = `
+                            <h4>${med.name} (Batch: ${med.batch})</h4>
+                            <p>Quantity: ${med.quantity}</p>
+                            <p>Expiry Date: ${med.expiryDate}</p>
+                        `;
+                        expiredList.appendChild(itemElement);
+                    });
+                } else {
+                    expiredList.innerHTML = "<p>No medicines have expired.</p>";
+                }
+
+            } catch (error) {
+                console.error("Error fetching expired medicines:", error);
+                aboutToExpireList.innerHTML = `<p style="color: red;">Failed to load data. ${error.message}</p>`;
+                expiredList.innerHTML = `<p style="color: red;">Failed to load data. ${error.message}</p>`;
+            }
         }
     </script>
 {% endblock %}

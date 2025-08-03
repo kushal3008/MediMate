@@ -65,6 +65,7 @@ class Medicine(db.Model):
     companyName = db.Column(db.String,nullable=False)
     expiryDate = db.Column(db.Date,nullable=False)
     manufactureDate = db.Column(db.Date,nullable=False)
+    chemistId = db.Column(db.Integer,nullable=False)
     	
     def __repr__(self):
           return ""
