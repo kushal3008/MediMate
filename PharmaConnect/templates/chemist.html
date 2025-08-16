@@ -606,7 +606,7 @@
             }
         }
 
-        /* New styles for the Expired section */
+        /* New styles for the Expired section and out of stock sections */
         .expired-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -651,7 +651,46 @@
             font-size: 0.9rem;
             color: #666;
         }
+        
+        .universal-threshold {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            border: 1px solid #d0e8ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
 
+        .universal-threshold h4 {
+            margin: 0;
+            color: #007bff;
+            font-size: 1.1rem;
+        }
+
+        .universal-threshold .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .universal-threshold .input-group input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .universal-threshold .input-group button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -736,7 +775,7 @@
                             <input type="email" id="customer-email" placeholder="Enter customer email" required>
                         </div>
                         <div class="total">Total: ₹<span id="total-amount">0.00</span></div>
-                        <button class="btn" type="button" onclick="prepareBillAndSubmit()" style="background-color: var(--color-4);">Generate & Send Bill</button>
+                        <button class="btn" type="button" onclick="prepareBillAndSubmit()">Generate & Send Bill</button>
                     </div>
                 </div>
             </div>
@@ -761,6 +800,34 @@
                 </div>
             </div>
         </section>
+        
+        <!-- New Out of Stock Section -->
+        <section id="out-of-stock" class="section">
+            <div class="universal-threshold">
+                <h4>Set Low Stock Threshold</h4>
+                <div class="input-group">
+                    <input type="number" id="universalThresholdInput" value="10" min="0">
+                    <button onclick="setUniversalThreshold()">Set</button>
+                </div>
+            </div>
+            <div class="expired-grid">
+                <div class="expired-card about-to-expire">
+                    <h3>Low Stock Medicines</h3>
+                    <div class="expired-list" id="low-stock-list">
+                        <!-- Content will be populated by JavaScript -->
+                        <p>Loading...</p>
+                    </div>
+                </div>
+                <div class="expired-card">
+                    <h3>Out of Stock Medicines</h3>
+                    <div class="expired-list" id="out-of-stock-list">
+                        <!-- Content will be populated by JavaScript -->
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
 
         <section id="register-drug" class="section register-drug-section">
             <h2>Register New Medicine</h2>
@@ -839,8 +906,9 @@
             {% endif %}
         {% endwith %}
     </div>
-
+    
     <script>
+        // --- Core Section Functions ---
         function showSection(event, sectionId) {
             if (event) event.preventDefault();
 
@@ -872,6 +940,10 @@
             // If the Expired section is shown, fetch data
             if (sectionId === 'expired') {
                 fetchExpiredMedicines();
+            }
+            // If the Out of Stock section is shown, render its data
+            if (sectionId === 'out-of-stock') {
+                fetchAndRenderOutOfStock();
             }
         }
 
@@ -1170,5 +1242,82 @@
                 expiredList.innerHTML = `<p style="color: red;">Failed to load data. ${error.message}</p>`;
             }
         }
+        
+        // --- Out of Stock Logic ---
+        /**
+         * Fetches low and out-of-stock medicine data from the server
+         * and renders it to the respective lists.
+         */
+        async function fetchAndRenderOutOfStock() {
+            const lowStockList = document.getElementById('low-stock-list');
+            const outOfStockList = document.getElementById('out-of-stock-list');
+            
+            // Set loading message
+            lowStockList.innerHTML = "<p>Loading...</p>";
+            outOfStockList.innerHTML = "<p>Loading...</p>";
+
+            const universalThreshold = document.getElementById('universalThresholdInput').value;
+
+            try {
+                const response = await fetch(`/out-of-stock?threshold=${universalThreshold}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log(data)
+                
+                // Render low stock medicines
+                if (data.low_stock.length > 0) {
+                    lowStockList.innerHTML = '';
+                    data.low_stock.forEach(med => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'expired-item';
+                        itemElement.innerHTML = `
+                            <h4>${med.name} (Batch: ${med.batch})</h4>
+                            <p>Quantity: ${med.quantity}</p>
+                        `;
+                        lowStockList.appendChild(itemElement);
+                    });
+                } else {
+                    lowStockList.innerHTML = "<p>No medicines are currently low on stock.</p>";
+                }
+                
+                // Render out of stock medicines
+                if (data.out_of_stock.length > 0) {
+                    outOfStockList.innerHTML = '';
+                    data.out_of_stock.forEach(med => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'expired-item';
+                        itemElement.innerHTML = `
+                            <h4>${med.name} (Batch: ${med.batch})</h4>
+                            <p>Quantity: ${med.quantity}</p>
+                        `;
+                        outOfStockList.appendChild(itemElement);
+                    });
+                } else {
+                    outOfStockList.innerHTML = "<p>All medicines have stock.</p>";
+                }
+
+            } catch (error) {
+                console.error("Error fetching stock data:", error);
+                lowStockList.innerHTML = `<p style="color: red;">Failed to load data. ${error.message}</p>`;
+                outOfStockList.innerHTML = `<p style="color: red;">Failed to load data. ${error.message}</p>`;
+            }
+        }
+        
+        /**
+         * Sets a universal low stock threshold and triggers a data fetch.
+         */
+        function setUniversalThreshold() {
+            const universalThreshold = document.getElementById('universalThresholdInput').value;
+            if (universalThreshold === '' || isNaN(universalThreshold) || parseInt(universalThreshold) < 0) {
+                showPopup('Error', 'Please enter a valid number for the universal threshold.', 'error');
+                return;
+            }
+            // Trigger a re-fetch of data with the new threshold
+            fetchAndRenderOutOfStock();
+            showPopup('Success', `Universal threshold set to ${universalThreshold}.`, 'success');
+        }
+
     </script>
 {% endblock %}

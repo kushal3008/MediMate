@@ -440,6 +440,28 @@ def register_routes(app,db,bcrypt):
             'about_to_expire': serialize_medicine(about_to_expire)
         })
 
+    @app.route('/out-of-stock')
+    @login_required
+    def out_of_stock():
+        if session['user_type'] != "chemist":
+            return jsonify({"error": "Unauthorized"}), 403
+        
+        threshold = int(request.args.get('threshold', default=10))
+        out_of_stock = Medicine.query.filter(Medicine.stock == 0, Medicine.chemistId == current_user.chemistId).all()
+        low_stock = Medicine.query.filter(Medicine.stock > 0,Medicine.stock <= threshold, Medicine.chemistId == current_user.chemistId).all()
+        def serialize_medicine(med_list):
+            return [{
+                'name': m.medicineName,
+                'batch': m.batchNo,
+                'quantity': m.stock,
+                'expiryDate': m.expiryDate.isoformat()
+            } for m in med_list]
+        
+        return jsonify({
+            'out_of_stock': serialize_medicine(out_of_stock),
+            'low_stock': serialize_medicine(low_stock)
+        })
+
     @app.route('/generate-bill',methods=['POST'])
     @login_required
     def generateBill():
