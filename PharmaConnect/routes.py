@@ -580,3 +580,8 @@ def register_routes(app,db,bcrypt):
             print(f"Error generating PDF: {e}. Please ensure wkhtmltopdf is installed and the path in routes.py is correct.", 'error')
             flash('Error generating PDF.', 'error')
             return redirect(url_for('chemist') + '#billing')
+        
+    @app.route('/stock-chart-data')
+    @login_required
+    def stockchart():
+        pass

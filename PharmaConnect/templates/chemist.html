@@ -906,7 +906,7 @@
             {% endif %}
         {% endwith %}
     </div>
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // --- Core Section Functions ---
         function showSection(event, sectionId) {
@@ -935,6 +935,11 @@
                 history.replaceState(null, null, '#' + sectionId);
             } else {
                 history.replaceState(null, null, '#dashboard');
+            }
+
+            // --- New: Call chart rendering functions when dashboard is active ---
+            if (sectionId === 'dashboard') {
+                initializeDashboard()
             }
 
             // If the Expired section is shown, fetch data
@@ -1318,6 +1323,146 @@
             fetchAndRenderOutOfStock();
             showPopup('Success', `Universal threshold set to ${universalThreshold}.`, 'success');
         }
+
+        function initializeDashboard() {
+            // Initialize sales chart
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Monthly Sales',
+                        data: [12000, 19000, 15000, 25000, 22000, 30000],
+                        borderColor: '#4CAF50',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initialize stock chart
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.stockChartInstance) {
+                window.stockChartInstance.destroy();
+            }
+
+            // Mock data for stock levels
+            const stockData = {
+                labels: ['Paracetamol', 'Aspirin', 'Amoxicillin', 'Ibuprofen', 'Cetirizine'],
+                datasets: [{
+                    data: [150, 250, 75, 120, 90],
+                }]
+            };
+
+            // Chart options
+            const stockOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                    ],
+                    borderWidth: 1,
+                    label: 'Stock Quantity',
+            };
+
+            // Create and store a new chart instance
+            window.stockChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: stockData,
+                options: stockOptions,
+            });
+
+            // Load doctor orders
+            loadDoctorOrders();
+        }
+
+        function loadDoctorOrders() {
+            // Sample doctor orders data - replace with actual API call
+            const orders = [
+                {
+                    id: 1,
+                    doctor: 'Dr. Sharma',
+                    patient: 'Rahul Kumar',
+                    medicines: ['Paracetamol 500mg', 'Amoxicillin 250mg'],
+                    date: '2024-03-15',
+                    status: 'pending'
+                },
+                {
+                    id: 2,
+                    doctor: 'Dr. Patel',
+                    patient: 'Priya Singh',
+                    medicines: ['Ibuprofen 400mg', 'Omeprazole 20mg'],
+                    date: '2024-03-14',
+                    status: 'completed'
+                }
+            ];
+
+            const ordersList = document.getElementById('doctor-orders-list');
+            ordersList.innerHTML = orders.map(order => `
+                <div class="order-item">
+                    <div class="order-info">
+                        <h4>Order #${order.id}</h4>
+                        <p>Doctor: ${order.doctor}</p>
+                        <p>Patient: ${order.patient}</p>
+                        <p>Medicines: ${order.medicines.join(', ')}</p>
+                        <p>Date: ${order.date}</p>
+                    </div>
+                    <span class="order-status status-${order.status}">
+                        ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Initialize dashboard when the section is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            const dashboardSection = document.getElementById('dashboard');
+            if (dashboardSection.classList.contains('active')) {
+                initializeDashboard();
+            }
+        });
+
+        // Update showSection function to initialize dashboard when shown
+        const originalShowSection = showSection;
+        showSection = function(event, sectionId) {
+            originalShowSection(event, sectionId);
+            if (sectionId === 'dashboard') {
+                initializeDashboard();
+            }
+        };
 
     </script>
 {% endblock %}
