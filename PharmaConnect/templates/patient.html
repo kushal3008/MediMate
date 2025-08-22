@@ -298,6 +298,19 @@
             <div class="form-group">
                 <textarea id="patient-address" name="patient_address" placeholder="Address" required readonly >{%if address%}{{address}}{%endif%}</textarea>
             </div>
+            <div class="form-group">
+                <label>Gender:</label>
+                <div class="radio-group">
+                    <input type="radio" id="male" name="patient_gender" value="Male" {% if gender == 'Male' %}checked{% endif %} required>
+                    <label for="male">Male</label>
+                    
+                    <input type="radio" id="female" name="patient_gender" value="Female" {% if gender == 'Female' %}checked{% endif %} required>
+                    <label for="female">Female</label>
+                    
+                    <input type="radio" id="other" name="patient_gender" value="Other" {% if gender == 'Other' %}checked{% endif %} required>
+                    <label for="other">Other</label>
+                </div>
+            </div>
             <button type="submit" class="btn" id="update-profile-btn" disabled>Update Profile</button>
         </form>
     </section>
