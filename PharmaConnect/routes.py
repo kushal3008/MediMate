@@ -355,7 +355,8 @@ def register_routes(app,db,bcrypt):
                                     email=patient.patientEmail,
                                     dob=patient.patientdob,
                                     phone=patient.contactNumber,
-                                    address = patient.address)
+                                    address=patient.address,
+                                    gender=patient.gender)
             else:
                 formName = request.form.get('form_name')
 
@@ -363,16 +364,34 @@ def register_routes(app,db,bcrypt):
                 if formName == "profile":
                     contactno = request.form.get('patient_phone')
                     address = request.form.get('patient_address')
+                    name = request.form.get('patient_name')
+                    dob = request.form.get('patient_dob')
+                    email = request.form.get('patient_email')
+                    gender = request.form.get('patient_gender')
+                    
                     if patient:
-                        patient.contactNumber = str(contactno)
-                        patient.address = str(address)
+                        if contactno:
+                            patient.contactNumber = str(contactno)
+                        if address:
+                            patient.address = str(address)
+                        if name:
+                            patient.patientName = str(name)
+                        if dob:
+                            patient.patientdob = datetime.strptime(dob, '%Y-%m-%d').date()
+                        if email:
+                            patient.patientEmail = str(email)
+                        if gender:
+                            patient.gender = str(gender)
+                        
                         db.session.commit()
+                    
                     return render_template('patient.html',
                                         name=patient.patientName,
                                         email=patient.patientEmail,
                                         dob=patient.patientdob,
                                         phone=patient.contactNumber,
-                                        address = patient.address)
+                                        address=patient.address,
+                                        gender=patient.gender)
         else:
             return redirect('/permission')
 

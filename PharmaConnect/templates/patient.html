@@ -189,6 +189,7 @@
         font-size: 1rem;
         box-sizing: border-box;
     }
+
     @media (max-width: 800px) {
         .sidebar {
             width: 70px;
@@ -281,35 +282,51 @@
     <section id="profile" class="section">
         <h2>Patient Profile</h2>
         <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
+        <div id="profile-success" style="display:none; color: #28a745; margin-bottom: 16px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">Profile updated successfully!</div>
         <form id="profile-form" class="profile-form" method="post" action="{{ url_for('patient',_anchor='profile') }}">
             <input type="hidden" name="form_name" value="profile">
             <div class="form-group">
-                <input type="text" id="patient-name" placeholder="Full Name" required readonly value="{{name}}">
+                <input type="text" id="patient-name" name="patient_name" placeholder="Full Name" required readonly value="{{name}}">
             </div>
             <div class="form-group">
-                <input type="date" id="patient-dob" placeholder="Date of Birth" required readonly value="{{dob}}">
+                <input type="date" id="patient-dob" name="patient_dob" placeholder="Date of Birth" required readonly value="{{dob}}">
+            </div>
+            <div class="form-group gender-form-group">
+                <div class="gender-display" id="gender-display">
+                    <span class="gender-label">Gender:</span>
+                    <span class="gender-text">
+                        {% if gender and gender|string|trim %}
+                            {{ gender|string|trim }}
+                        {% else %}
+                            <span style="color: #999; font-style: italic;">Not specified</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="gender-input-container" id="gender-edit" style="display: none;">
+                    <div class="gender-options">
+                        <div class="gender-option">
+                            <input type="radio" id="male" name="patient_gender" value="Male" {% if gender == 'Male' %}checked{% endif %}>
+                            <label for="male">Male</label>
+                        </div>
+                        <div class="gender-option">
+                            <input type="radio" id="female" name="patient_gender" value="Female" {% if gender == 'Female' %}checked{% endif %}>
+                            <label for="female">Female</label>
+                        </div>
+                        <div class="gender-option">
+                            <input type="radio" id="other" name="patient_gender" value="Other" {% if gender == 'Other' %}checked{% endif %}>
+                            <label for="other">Other</label>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
-                <input type="email" id="patient-email" placeholder="Email Address" required readonly value="{{email}}">
+                <input type="email" id="patient-email" name="patient_email" placeholder="Email Address" required readonly value="{{email}}">
             </div>
             <div class="form-group">
-                <input type="tel" id="patient-phone" name ="patient_phone" placeholder="Phone Number" required readonly value="{% if phone%}{{phone}}{%endif%}">
+                <input type="tel" id="patient-phone" name="patient_phone" placeholder="Phone Number" required readonly value="{% if phone%}{{phone}}{%endif%}">
             </div>
             <div class="form-group">
                 <textarea id="patient-address" name="patient_address" placeholder="Address" required readonly >{%if address%}{{address}}{%endif%}</textarea>
-            </div>
-            <div class="form-group">
-                <label>Gender:</label>
-                <div class="radio-group">
-                    <input type="radio" id="male" name="patient_gender" value="Male" {% if gender == 'Male' %}checked{% endif %} required>
-                    <label for="male">Male</label>
-                    
-                    <input type="radio" id="female" name="patient_gender" value="Female" {% if gender == 'Female' %}checked{% endif %} required>
-                    <label for="female">Female</label>
-                    
-                    <input type="radio" id="other" name="patient_gender" value="Other" {% if gender == 'Other' %}checked{% endif %} required>
-                    <label for="other">Other</label>
-                </div>
             </div>
             <button type="submit" class="btn" id="update-profile-btn" disabled>Update Profile</button>
         </form>
@@ -362,6 +379,15 @@ const nameInput = document.getElementById('patient-name');
 const dobInput = document.getElementById('patient-dob');
 const emailInput = document.getElementById('patient-email');
 
+// Store original values for reset
+let originalValues = {
+    name: nameInput.value,
+    dob: dobInput.value,
+    email: emailInput.value,
+    phone: phoneInput.value,
+    address: addressInput.value
+};
+
 let editMode = false;
 
 editBtn.addEventListener('click', function() {
@@ -372,15 +398,31 @@ editBtn.addEventListener('click', function() {
         addressInput.removeAttribute('readonly');
         dobInput.removeAttribute('readonly');
         nameInput.removeAttribute('readonly');
+        emailInput.removeAttribute('readonly');
+
         updateBtn.disabled = false;
+        // Show gender edit options
+        document.getElementById('gender-display').style.display = 'none';
+        document.getElementById('gender-edit').style.display = 'block';
     } else {
         editBtn.textContent = 'Edit Profile';
         phoneInput.setAttribute('readonly', true);
         addressInput.setAttribute('readonly', true);
         nameInput.setAttribute('readonly', true);
         dobInput.setAttribute('readonly', true);
+        emailInput.setAttribute('readonly', true);
+
         updateBtn.disabled = true;
-        profileForm.reset()
+        // Reset form to original values
+        nameInput.value = originalValues.name;
+        dobInput.value = originalValues.dob;
+        emailInput.value = originalValues.email;
+        phoneInput.value = originalValues.phone;
+        addressInput.value = originalValues.address;
+        
+        // Hide gender edit options
+        document.getElementById('gender-display').style.display = 'block';
+        document.getElementById('gender-edit').style.display = 'none';
     }
 });
 
@@ -389,12 +431,58 @@ profileForm.addEventListener('submit', function(e) {
         e.preventDefault();
         return false;
     }
+    
+    // Validate required fields
+    const requiredFields = ['patient-name', 'patient-email', 'patient-dob'];
+    let isValid = true;
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field.value.trim()) {
+            isValid = false;
+            field.style.borderColor = '#ff0000';
+        } else {
+            field.style.borderColor = '';
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return false;
+    }
+    
+    // Show success message
+    const successMsg = document.getElementById('profile-success');
+    successMsg.style.display = 'block';
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+        successMsg.style.display = 'none';
+    }, 3000);
+    
+    // Update original values after successful submission
+    originalValues = {
+        name: nameInput.value,
+        dob: dobInput.value,
+        email: emailInput.value,
+        phone: phoneInput.value,
+        address: addressInput.value
+    };
+    
     // After successful update, disable editing again
     editMode = false;
     editBtn.textContent = 'Edit Profile';
     phoneInput.setAttribute('readonly', true);
     addressInput.setAttribute('readonly', true);
+    nameInput.setAttribute('readonly', true);
+    dobInput.setAttribute('readonly', true);
+    emailInput.setAttribute('readonly', true);
     updateBtn.disabled = true;
+    
+    // Hide gender edit options
+    document.getElementById('gender-display').style.display = 'block';
+    document.getElementById('gender-edit').style.display = 'none';
 });
 </script>
 {% endblock %} 

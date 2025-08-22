@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetForm) {
                 targetForm.classList.add('active');
             }
-            // Clear all input fields in both forms
+            // Clear all input fields in all forms
             forms.forEach(form => {
                 const inputs = form.querySelectorAll('input');
                 inputs.forEach(input => {
@@ -27,29 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle form submissions
-    const signInForms = document.querySelectorAll('#chemist-form, #doctor-form');
-    const signUpForms = document.querySelectorAll('#chemist-signup-form, #doctor-signup-form');
-
-    // signInForms.forEach(form => {
-    //     form.addEventListener('submit', function(e) {
-    //         e.preventDefault();
-    //         const formData = new FormData(form);
-    //         const data = Object.fromEntries(formData.entries());
-    //         console.log('Sign In Data:', data);
-    //         alert('Sign In functionality will be implemented with backend integration');
-    //     });
-    // });
-
-    // signUpForms.forEach(form => {
-    //     form.addEventListener('submit', function(e) {
-    //         e.preventDefault();
-    //         const formData = new FormData(form);
-    //         const data = Object.fromEntries(formData.entries());
-    //         console.log('Sign Up Data:', data);
-    //         alert('Sign Up functionality will be implemented with backend integration');
-    //     });
-    // });
+    // Handle form submissions for all forms
+    const allForms = document.querySelectorAll('#chemist-form, #doctor-form, #patient-form');
 
     // Floating label effect
     const inputs = document.querySelectorAll('input');
