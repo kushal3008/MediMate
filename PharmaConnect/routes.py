@@ -364,24 +364,12 @@ def register_routes(app,db,bcrypt):
                 if formName == "profile":
                     contactno = request.form.get('patient_phone')
                     address = request.form.get('patient_address')
-                    name = request.form.get('patient_name')
-                    dob = request.form.get('patient_dob')
-                    email = request.form.get('patient_email')
                     gender = request.form.get('patient_gender')
                     
                     if patient:
-                        if contactno:
-                            patient.contactNumber = str(contactno)
-                        if address:
-                            patient.address = str(address)
-                        if name:
-                            patient.patientName = str(name)
-                        if dob:
-                            patient.patientdob = datetime.strptime(dob, '%Y-%m-%d').date()
-                        if email:
-                            patient.patientEmail = str(email)
-                        if gender:
-                            patient.gender = str(gender)
+                        patient.contactNumber = str(contactno)
+                        patient.address = str(address)
+                        patient.gender = str(gender)
                         
                         db.session.commit()
                     
@@ -603,4 +591,6 @@ def register_routes(app,db,bcrypt):
     @app.route('/stock-chart-data')
     @login_required
     def stockchart():
-        pass
+        medicine = Medicine.query.filter_by(chemistId=current_user.chemistId).order_by(Medicine.stock.desc()).all()
+        data = {"labels":[i.medicineName for i in medicine],"datasets":[{"data":[i.stock for i in medicine]}]}
+        return jsonify(data)

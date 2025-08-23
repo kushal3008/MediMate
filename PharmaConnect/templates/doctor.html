@@ -527,7 +527,7 @@
             color: #c62828;
         }
 
-        /* Add these styles to the existing styles section */
+        /* Add these styles to the existing styles section*/
         .profile-form {
             max-width: 600px;
             margin: 0 auto;
@@ -539,19 +539,18 @@
         .profile-form .form-group {
             margin-bottom: 20px;
         }
-        .profile-form input,
-        .profile-form textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--color-3);
-            border-radius: 5px;
-            font-size: 1em;
-            box-sizing: border-box;
-        }
-        .profile-form textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
+        
+        #clinic-address {
+        min-height: 100px;
+        width: 100%;
+        resize: none;
+        padding: 10px;
+        border: 1px solid var(--color-3);
+        border-radius: 5px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
     </style>
 </head>
 <body>
@@ -635,7 +634,7 @@
             <h2>Doctor Profile</h2>
             <form id="profile-form" class="profile-form" method="POST" action="{{ url_for('doctor',_anchor='profile') }}">
                 <input type="hidden" name="form_name" value="profile">
-                <button type="button" id="edit-profile-btn" class="btn" style="margin-bottom: 16px;">Edit Profile</button>
+                <button type="button" id="edit-profile-btn" class="submit-btn" style="margin-bottom: 16px;">Edit Profile</button>
                 <div class="form-group">
                     <input type="text" name="doctor_name" id="doctor-name" placeholder="Full Name" required readonly value="{{ name }}">
                 </div>
@@ -649,9 +648,9 @@
                     <input type="tel" name="contact_number" id="phone" placeholder="Phone Number" required readonly value="{% if phone %}{{ phone }}{% endif %}">
                 </div>
                 <div class="form-group">
-                    <textarea id="address" name="clinic_address" placeholder="Clinic Address" required readonly>{% if address %}{{ address }}{% endif %}</textarea>
+                    <textarea id="clinic-address" name="clinic_address" placeholder="Clinic Address" required readonly>{% if address %}{{ address }}{% endif %}</textarea>
                 </div>
-                <button type="submit" class="btn" id="update-profile-btn" disabled>Update Profile</button>
+                <button type="submit" class="submit-btn" id="update-profile-btn" disabled>Update Profile</button>
             </form>
         </section>
     </main>
@@ -726,39 +725,27 @@
     
     <script>
         function showSection(event, sectionId) {
-        if (event) event.preventDefault();
-
-        // Hide all sections
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active');
-        });
-
-        // Show selected section
-        const selectedSection = document.getElementById(sectionId);
-        if (selectedSection) selectedSection.classList.add('active');
-
-        // Remove 'active' class from all links
-        document.querySelectorAll('.sidebar nav a').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        // Add 'active' class to clicked link
-        const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
-        if (activeLink) activeLink.classList.add('active');
-
-        // Update the URL hash
-        if (sectionId !== 'dashboard') {
-            history.replaceState(null, null, '#' + sectionId);
-        } else {
-            history.replaceState(null, null, '#dashboard');
+            if (event) event.preventDefault();
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.style.display = 'none');
+            const target = document.getElementById(sectionId);
+            if (target) target.style.display = 'block';
+            document.querySelectorAll('.sidebar nav a').forEach(link => {
+                link.classList.remove('active');
+            });
+            const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+            if (activeLink) activeLink.classList.add('active');
         }
-    }
 
-    // On page load, show the section from the anchor
-    window.addEventListener('DOMContentLoaded', () => {
-        const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
-        showSection(null, hash);
-    });
+        window.addEventListener("DOMContentLoaded", () => {
+            // Check if there's an anchor in the URL
+            const anchor = window.location.hash.substring(1); // remove the #
+            if (anchor) {
+                showSection(null, anchor);
+            } else {
+                showSection(null, 'dashboard'); // default section
+            }
+        });
 
         // Edit Profile button logic for Doctor
         const editBtn = document.getElementById('edit-profile-btn');
