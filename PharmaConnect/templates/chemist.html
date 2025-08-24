@@ -582,6 +582,9 @@
 
             .modal-footer {
                 margin-top: 20px;
+                display: flex;
+                justify-content: center;
+                gap: 10px;
             }
 
             .modal-footer .close-btn {
@@ -786,8 +789,12 @@
                 </div>
             </section>
 
-            <section id="stock-management" class="section register-drug-section">
+            <section id="stock-management" class="section register-drug-section" style="min-height: 615px;">
                 <h2>Stock Management</h2>
+                <div class="input-group">
+                    <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
+                    <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
+                </div>
             </section>
 
             <!-- New Expired Section -->
@@ -900,7 +907,7 @@
                     <p id="modal-message"></p>
                 </div>
                 <div class="modal-footer">
-                    <button class="close-btn" onclick="hidePopup()">Close</button>
+                    
                 </div>
             </div>
         </div>
@@ -1178,21 +1185,39 @@
             const modalTitle = document.getElementById('modal-title');
             const modalMessage = document.getElementById('modal-message');
             const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
-            
-            /**
-            * Shows a custom popup with a title and message.
-            * @param {string} title - The title of the popup.
-            * @param {string} message - The message to display in the popup.
-            * @param {string} type - 'success' or 'error' to change the styling.
-            */
-            function showPopup(title, message, type = 'success') {
+            const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
+
+                function showPopup(title, message, type = 'info', buttons = []) {
                 modalTitle.textContent = title;
                 modalMessage.textContent = message;
-                modalContent.classList.remove('success', 'error');
+                modalContent.classList.remove('success', 'error', 'info', 'loading');
                 modalContent.classList.add(type);
+                modalFooter.innerHTML = '';
+            
+                if (buttons.length > 0) {
+                    buttons.forEach(btnConfig => {
+                        const buttonElement = document.createElement('button');
+                        buttonElement.textContent = btnConfig.text;
+                        buttonElement.className = btnConfig.className;
+                        buttonElement.setAttribute('onclick', btnConfig.onclick);
+                        modalFooter.appendChild(buttonElement);
+                    });
+                } else {
+                    const buttonElement = document.createElement('button');
+                    buttonElement.textContent = 'OK';
+                    buttonElement.className = 'card-btn';
+                    buttonElement.setAttribute('onclick', 'hidePopup()');
+                    modalFooter.appendChild(buttonElement);
+                }
+            
                 modal.style.display = 'flex';
             }
 
+            function showInfoPopup(title, message, type = 'info') {
+                const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
+                showPopup(title, message, type, buttons);
+            }
+            
             /**
             * Hides the custom popup.
             */
@@ -1479,6 +1504,177 @@
                     initializeDashboard();
                 }
             };
+
+            async function stockSearchBar(){
+
+                const searchInput = document.getElementById('search-bar-stock-management').value;
+                const resultsContainer = document.getElementById('stock-management');
+                const oldResults = resultsContainer.querySelectorAll('.default-wrapper');
+                const oldResults2 = resultsContainer.querySelectorAll('.company-name-container');
+                oldResults.forEach(div => div.remove());
+                oldResults2.forEach(div => div.remove());
+
+                if (searchInput === '') {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/stock-data/' + searchInput); 
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const searchData = await response.json();
+                    console.log("Data fetched from API:", searchData);
+                    const container = document.getElementById('stock-management')
+
+                    if (searchData.length === 0) {
+                        oldResults2.forEach(div => div.remove());
+                        resultsContainer.insertAdjacentHTML('beforeend', '<div class="company-name-container" style="text-align: center; margin-top: 20px;">No medicines found.</div>');
+                        return;
+                    }
+                    
+                    searchData.forEach(medicine => {
+                    const medicineHTML = `
+                        <div class="default-wrapper">
+                            <div class="data-container">
+                                <div class="data-container-wrapper">
+                                    <div class="name-container">
+                                        <h1>${ medicine.medicineName }</h1>
+                                    </div>
+                                    <div class="company-name-container">
+                                        By ${ medicine.companyName }
+                                    </div>
+                                    <div class="stock-container">
+                                        Stock: ${ medicine.stock }
+                                    </div>
+                                    <div class="price-container">
+                                        <span style="margin-top : 10px;"">₹${ medicine.medicinePrice }</span>
+                                        <div class="btn-group">
+                                            <button class="card-btn" id="${medicine.medicineId}" onclick="updateStock('${medicine.medicineName}','${medicine.medicineId}','${medicine.stock}')" style="margin-left: 682px;">Update Stock</button>
+                                            <button class="card-btn" id="${medicine.medicineId}" onclick="confirmDelete('${medicine.medicineId}', '${medicine.medicineName}')">Delete Medicine</button>
+                                        </div>  
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    container.innerHTML += medicineHTML;
+                    });
+                } catch (error) {
+                    console.error("Error fetching medicines:", error);
+                }
+            }
+
+            function deleteMedicine(medicineId) {
+                // Build the URL using a JavaScript template literal
+                const url = `/delete/${medicineId}`;
+                
+                fetch(url, { method: 'POST' })
+                    .then(response => {
+                        if (response.ok) {
+                            showPopup('Success', 'Medicine deleted successfully.', 'success');
+                            // You can then refresh the page or remove the item from the DOM
+                        } else {
+                            showPopup('Error', 'Failed to delete the medicine.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showPopup('Error', `An error occurred: ${error.message}`, 'error');
+                    });
+            }
+
+            function confirmDelete(medicineId, medicineName) {
+                const modalTitle = `Confirm Deletion`;
+                const modalMessage = `Are you sure you want to delete ${medicineName}? This action cannot be undone.`;
+                
+                // Create a list of buttons to pass to the showPopup function
+                const buttons = [
+                    { text: 'Cancel', className: 'card-btn', onclick: 'hidePopup()' },
+                    { text: 'Confirm', className: 'card-btn confirm-btn', onclick: `deleteMedicine('${medicineId}')` }
+                ];
+                
+                // Call the showPopup function and pass the buttons
+                showPopup(modalTitle, modalMessage, 'error', buttons);
+            }
+
+            function updateStock(medicineName,medicineId,stock) {
+
+                if(stock > 0){
+                    showPopup('Error', 'Medicine should be out of stock first.', 'error')
+                }
+                else{
+                    const resultsContainer = document.getElementById('stock-management');
+                    resultsContainer.innerHTML = '';
+
+                    try{
+                        const container = document.getElementById('stock-management')
+                        const updateHTML = `
+                            <div class="form-group center-label">
+                                <input type="text" id="update-batch-no" placeholder="Enter batch number" required>
+                            </div>
+                            <div class="form-group center-label">
+                                <input type="date" id="update-mfg-date" required>
+                            </div>
+                            <div class="form-group center-label">
+                                <input type="number" id="update-expiry-months" placeholder="Months left to expire from manufacturing date" required>
+                            </div>
+                            <div class="form-group center-label">
+                                <input type="number" id="update-quantity" placeholder="Enter quantity of strips" min="0" required>
+                            </div>
+                            <div class="form-group center-label">
+                                <button class="submit-btn" id="update-stock-btn" onclick="updateStockQuantity('${medicineId}')">Update</button>
+                            </div>
+                        `
+                        container.innerHTML += updateHTML;
+                    }
+                    catch(error){
+                        showPopup('Error', `An error occurred: ${error.message}`, 'error'); 
+                    }
+                }
+            }
+
+            function updateStockQuantity(medicineId) {
+                // Build the URL using a JavaScript template literal
+                const batchNo = document.getElementById('update-batch-no').value;
+                const mfgDate = document.getElementById('update-mfg-date').value;
+                const expiryMonths = document.getElementById('update-expiry-months').value;
+                const quantity = document.getElementById('update-quantity').value;
+                const url = `/update/${medicineId}?batchNo=${batchNo}&mfgDate=${mfgDate}&expiryMonths=${expiryMonths}&quantity=${quantity}`;
+                
+                fetch(url, { method: 'POST' })
+                    .then(response => {
+                        if (response.ok) {
+                            const buttons = [
+                                { text: 'Done', className: 'card-btn', onclick: 'reloadStockPage()' },
+                            ];
+                            showPopup('Success', 'Medicine updated successfully.', 'success');
+                        } else {
+                            showPopup('Error', 'Failed to update the medicine.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showPopup('Error', `An error occurred: ${error.message}`, 'error');
+                    });
+            }
+
+            function reloadStockPage(){
+                const resultsContainer = document.getElementById('stock-management');
+                resultsContainer.innerHTML = '';
+                try{
+                    const container = document.getElementById('stock-management')
+                    const baseHTML = `
+                        <h2>Stock Management</h2>
+                        <div class="input-group">
+                            <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
+                            <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
+                        </div>
+                    `
+                    container.innerHTML += baseHTML;
+                }catch(error){
+                    showPopup('Error', `An error occurred: ${error.message}`, 'error');
+                }
+            }
 
         </script>
     {% endblock %}

@@ -453,6 +453,103 @@ input:valid + label {
     letter-spacing: 0.5px;
 }
 
+.default-wrapper {
+    border: 2px solid var(--color-2);   
+    border-radius: 6px;
+    display: flex;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.data-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.data-container-wrapper {
+    flex: 1 1;
+    position: relative;
+    width: 100%;
+}
+
+.name-container {
+    display: flex;
+    font-size: 18px;
+    font-weight: 700;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: var(--color-4);
+}
+
+.company-name-container {
+    color: #8897a2;
+    font-size: 16px;
+}
+
+.stock-container {
+    color: #8897a2;
+    font-size: 16px;
+}
+
+.price-container {
+    color: var(--color-4);
+    font-size: 20px;
+    font-weight: 700;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(to bottom, var(--color-4), var(--color-5));
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
+    transform: translateY(0);
+}
+
+.submit-btn:hover {
+    background: linear-gradient(to bottom, var(--color-5), var(--color-4));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-btn {
+    background: linear-gradient(to bottom, var(--color-4), var(--color-5));
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
+    transform: translateY(0);
+}
+
+.card-btn:hover {
+    background: linear-gradient(to bottom, var(--color-5), var(--color-4));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-group{
+    display: flex;
+}
+
 @media (max-width: 480px) {
     .container {
         padding: 10px;

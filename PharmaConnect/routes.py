@@ -594,3 +594,50 @@ def register_routes(app,db,bcrypt):
         medicine = Medicine.query.filter_by(chemistId=current_user.chemistId).order_by(Medicine.stock.desc()).all()
         data = {"labels":[i.medicineName for i in medicine],"datasets":[{"data":[i.stock for i in medicine]}]}
         return jsonify(data)
+    
+    @app.route('/stock-data/<keyword>')
+    @login_required
+    def stockdata(keyword):
+        medicine = Medicine.query.filter_by(chemistId = current_user.chemistId).filter(Medicine.medicineName.ilike(f"%{keyword}%")).all()
+        data = []
+        for i in medicine:
+            data.append({"medicineId":i.medicineId,
+                         "medicineName":i.medicineName,
+                         "stock":i.stock,
+                         "medicinePrice":i.medicinePrice,
+                         "companyName":i.companyName})
+        return jsonify(data)
+    
+    @app.route('/delete/<medicineId>',methods=['POST'])
+    @login_required
+    def deleteMedicine(medicineId):
+        medicine = Medicine.query.filter_by(chemistId=current_user.chemistId,medicineId=medicineId)
+        db.session.delete(medicine)
+        db.session.commit()
+        return jsonify({"message":"Medicine deleted successfully"}),200
+    
+    @app.route('/update/<medicineId>',methods=['POST'])
+    @login_required
+    def updateMedicine(medicineId):
+        medicine = Medicine.query.filter_by(chemistId=current_user.chemistId, medicineId=medicineId).first()
+
+        batchNo = request.args.get('batchNo')
+        expiryMonths = int(request.args.get('expiryMonths'))
+        quantity = request.args.get('quantity')
+        mfgDate = request.args.get('mfgDate')
+        manufactureDate = datetime.strptime(mfgDate, "%Y-%m-%d").date()
+        expiryDate = get_date(manufactureDate,expiryMonths)
+        print(f"mfg date:{manufactureDate}, expiry date:{expiryDate},quan:{quantity}, batch:{batchNo}")
+
+        if medicine:
+            medicine.batchNo = str(batchNo)
+            medicine.stock = int(quantity)
+            medicine.manufactureDate = manufactureDate
+            medicine.expiryDate = expiryDate
+            db.session.commit()
+            return jsonify({"message":"Medicine updated successfully"}),200
+        else:
+            return jsonify({"message":"Medicine not found"}),404
+
+
+    
