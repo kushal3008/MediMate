@@ -789,6 +789,50 @@
                 </div>
             </section>
 
+            <section id="doctor-order" class="section register-drug-section" style="min-height: 615px;;">
+                <h2>Doctor Orders</h2>
+                <span class="order-status status-request-pending">Pending</span>
+                <span class="order-status status-not-delivered">Not Delivered</span>
+                <span class="order-status status-completed">Completed</span>
+                <div class="order-list">
+                    <div class="order-item">
+                        <div class="order-info">
+                            <h4>Order #1</h4>
+                            <p>Dr. Kushal Prajapati</p>
+                            <p>Address: C302 Ratnadeep Avenue</p>
+                            <p>Medicines: Dolo 650,Amoxicillin 250mg</p>
+                            <p>Bill Amount: ₹1000</p>
+                            <p>Date: 2024-08-25</p>
+                        </div>
+                        <span class="order-status status-pending">Pending</span>
+                    </div>
+                    <div class="order-item">
+                        <div class="order-info">
+                            <h4>Order #1</h4>
+                            <p>Dr. Kushal Prajapati</p>
+                            <p>Address: C302 Ratnadeep Avenue</p>
+                            <p>Medicines: Dolo 650,Amoxicillin 250mg</p>
+                            <p>Bill Amount: ₹1000</p>
+                            <p>Date: 2024-08-25</p>
+                        </div>
+                        <span class="order-status status-pending">Pending</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sales" class="section register-drug-section" style="min-height: 615px;">
+                <h2>Sales Report</h2>
+                <div style="display: flex; gap:100px">
+                    <div class="graph-container" id="sales-graph" style="margin-left:137.5px"></div>
+                    <div class="graph-container" id="date-graph"></div>
+                </div>
+                <h2 style="margin-top: 20px;">Prediction Report</h2>
+                <div style="display: flex; gap:100px;">
+                    <div class="graph-container" id="prediction-graph" style="margin-left:137.5px"></div>
+                    <div class="graph-container" id="prediction-date-graph"></div>
+                </div>
+            </section>
+
             <section id="stock-management" class="section register-drug-section" style="min-height: 615px;">
                 <h2>Stock Management</h2>
                 <div class="input-group">
@@ -1373,22 +1417,33 @@
                 }
             }
 
+            async function fetchSalesData(){
+                try {
+                    const response = await fetch('/sales-chart-data'); // Make GET request to your API endpoint
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    console.log("Sales Data fetched from API:", data);
+                    return data;
+                } catch (error) {
+                    console.error("Error fetching medicines:", error);
+                    return { labels: [], datasets: [] };
+                }
+            } 
+
             async function initializeDashboard() {
                 // Initialize sales chart
                 const salesCtx = document.getElementById('salesChart').getContext('2d');
-                new Chart(salesCtx, {
+
+                if(window.salesChartInstance){
+                    window.salesChartInstance.destroy();
+                }
+
+                salesChartInstance = new Chart(salesCtx, {
                     type: 'line',
-                    data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                        datasets: [{
-                            data: [12000, 19000, 15000, 25000, 22000, 30000],
-                            fill: false
-                        }]
-                    },
+                    data: await fetchSalesData(),
                     options: {
-                        tension: 0.1,
-                        borderColor: '#4CAF50',
-                        label: 'Monthly Sales',
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
@@ -1511,8 +1566,14 @@
                 const resultsContainer = document.getElementById('stock-management');
                 const oldResults = resultsContainer.querySelectorAll('.default-wrapper');
                 const oldResults2 = resultsContainer.querySelectorAll('.company-name-container');
+                const text = document.getElementById('search-text')
                 oldResults.forEach(div => div.remove());
                 oldResults2.forEach(div => div.remove());
+                
+                if (text){
+                    text.remove();
+                }
+
 
                 if (searchInput === '') {
                     return;
@@ -1526,6 +1587,7 @@
                     const searchData = await response.json();
                     console.log("Data fetched from API:", searchData);
                     const container = document.getElementById('stock-management')
+                    container.innerHTML += `<p id="search-text" style="color: var(--color-4); font-weight:600; font-size: 20px; text-align: left; margin-top: 20px;">Showing all results for <b>"${searchInput}"</b></p>`;
 
                     if (searchData.length === 0) {
                         oldResults2.forEach(div => div.remove());
@@ -1648,7 +1710,7 @@
                             const buttons = [
                                 { text: 'Done', className: 'card-btn', onclick: 'reloadStockPage()' },
                             ];
-                            showPopup('Success', 'Medicine updated successfully.', 'success');
+                            showPopup('Success', 'Medicine updated successfully.', 'success',buttons);
                         } else {
                             showPopup('Error', 'Failed to update the medicine.', 'error');
                         }
@@ -1671,6 +1733,7 @@
                         </div>
                     `
                     container.innerHTML += baseHTML;
+                    hidePopup()
                 }catch(error){
                     showPopup('Error', `An error occurred: ${error.message}`, 'error');
                 }

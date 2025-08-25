@@ -595,6 +595,24 @@ def register_routes(app,db,bcrypt):
         data = {"labels":[i.medicineName for i in medicine],"datasets":[{"data":[i.stock for i in medicine]}]}
         return jsonify(data)
     
+    @app.route('/sales-chart-data')
+    @login_required
+    def saleschart():
+        total_sales_by_day = db.session.query(
+            db.func.strftime('%Y-%m-%d', Sales.date).label('sales_date'),
+            db.func.sum(Sales.totalPrice).label('daily_total')
+        ).filter(
+            Sales.chemistId == current_user.chemistId
+        ).group_by(
+            Sales.date
+        ).order_by(
+            Sales.date
+        ).all()
+        data = {"labels":[i.sales_date for i in total_sales_by_day],
+                "datasets":[{"data":[i.daily_total for i in total_sales_by_day],"fill":False,"label":"Daily Sales","tension":0.1,"borderColor":"#4CAF50"}],
+                }
+        return jsonify(data)
+    
     @app.route('/stock-data/<keyword>')
     @login_required
     def stockdata(keyword):
@@ -619,25 +637,22 @@ def register_routes(app,db,bcrypt):
     @app.route('/update/<medicineId>',methods=['POST'])
     @login_required
     def updateMedicine(medicineId):
-        medicine = Medicine.query.filter_by(chemistId=current_user.chemistId, medicineId=medicineId).first()
+            medicine = Medicine.query.filter_by(chemistId=current_user.chemistId, medicineId=medicineId).first()
 
-        batchNo = request.args.get('batchNo')
-        expiryMonths = int(request.args.get('expiryMonths'))
-        quantity = request.args.get('quantity')
-        mfgDate = request.args.get('mfgDate')
-        manufactureDate = datetime.strptime(mfgDate, "%Y-%m-%d").date()
-        expiryDate = get_date(manufactureDate,expiryMonths)
-        print(f"mfg date:{manufactureDate}, expiry date:{expiryDate},quan:{quantity}, batch:{batchNo}")
+            batchNo = request.args.get('batchNo')
+            expiryMonths = int(request.args.get('expiryMonths'))
+            quantity = request.args.get('quantity')
+            mfgDate = request.args.get('mfgDate')
+            manufactureDate = datetime.strptime(mfgDate, "%Y-%m-%d").date()
+            expiryDate = get_date(manufactureDate,expiryMonths)
+            print(f"mfg date:{manufactureDate}, expiry date:{expiryDate},quan:{quantity}, batch:{batchNo}")
 
-        if medicine:
-            medicine.batchNo = str(batchNo)
-            medicine.stock = int(quantity)
-            medicine.manufactureDate = manufactureDate
-            medicine.expiryDate = expiryDate
-            db.session.commit()
-            return jsonify({"message":"Medicine updated successfully"}),200
-        else:
-            return jsonify({"message":"Medicine not found"}),404
-
-
-    
+            if medicine:
+                medicine.batchNo = str(batchNo)
+                medicine.stock = int(quantity)
+                medicine.manufactureDate = manufactureDate
+                medicine.expiryDate = expiryDate
+                db.session.commit()
+                return jsonify({"message":"Medicine updated successfully"}),200
+            else:
+                return jsonify({"message":"Medicine not found"}),404
