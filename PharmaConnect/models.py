@@ -65,7 +65,7 @@ class Medicine(db.Model):
     companyName = db.Column(db.String,nullable=False)
     expiryDate = db.Column(db.Date,nullable=False)
     manufactureDate = db.Column(db.Date,nullable=False)
-    chemistId = db.Column(db.Integer,db.ForeignKey('chemist.chemistId'),nullable=False)
+    chemistId = db.Column(db.Integer,nullable=False)
     	
     def __repr__(self):
           return ""
@@ -74,62 +74,96 @@ class Medicine(db.Model):
           return self.medicineId
     
 class Sales(db.Model):
-      __tablename__ = 'sales'
+    __tablename__ = 'sales'
       
-      salesId = db.Column(db.Integer,primary_key=True)
-      billId = db.Column(db.Integer,nullable=False)
-      name = db.Column(db.String,nullable=False)
-      quantity = db.Column(db.Integer,nullable=False)
-      pricePerUnit = db.Column(db.String,nullable=False)
-      totalPrice = db.Column(db.Integer,nullable=False)
-      date = db.Column(db.Date,nullable=False)
-      chemistId = db.Column(db.Integer,nullable=False)
+    salesId = db.Column(db.Integer,primary_key=True)
+    billId = db.Column(db.Integer,nullable=False)
+    name = db.Column(db.String,nullable=False)
+    quantity = db.Column(db.Integer,nullable=False)
+    pricePerUnit = db.Column(db.String,nullable=False)
+    totalPrice = db.Column(db.Integer,nullable=False)
+    date = db.Column(db.Date,nullable=False)
+    chemistId = db.Column(db.Integer,nullable=False)
 
-      def __repr__(self):
-          return ""
+    def __repr__(self):
+        return ""
       
-      def get_id(self):
-          return self.salesId
+    def get_id(self):
+        return self.salesId
 
 class Customers(db.Model):
-      __tablename__ = 'customers'
+    __tablename__ = 'customers'
 
-      customerId = db.Column(db.Integer,primary_key=True)
-      customerEmail = db.Column(db.String,nullable=False)
-      customerName = db.Column(db.String,nullable=False)
+    customerId = db.Column(db.Integer,primary_key=True)
+    customerEmail = db.Column(db.String,nullable=False)
+    customerName = db.Column(db.String,nullable=False)
 
-      def __repr__(self):
-          return ""
+    def __repr__(self):
+        return ""
       
-      def get_id(self):
-          return self.customerId
+    def get_id(self):
+        return self.customerId
       
 class Purchase(db.Model):
-     __tablename__ = 'purchase'
+    __tablename__ = 'purchase'
 
-     purchaseId = db.Column(db.Integer,primary_key=True)
-     billId = db.Column(db.Integer,nullable=False)
-     customerId = db.Column(db.Integer,nullable=False)
-     billAmount = db.Column(db.Integer,nullable=False)
-     chemistId = db.Column(db.Integer,nullable=False)
+    purchaseId = db.Column(db.Integer,primary_key=True)
+    billId = db.Column(db.Integer,nullable=False)
+    customerId = db.Column(db.Integer,nullable=False)
+    billAmount = db.Column(db.Integer,nullable=False)
+    chemistId = db.Column(db.Integer,nullable=False)
 
-     def __repr__(self):
-          return ""
+    def __repr__(self):
+        return ""
      
-     def get_id(self):
-          return self.purchaseId
+    def get_id(self):
+        return self.purchaseId
      
 class Appointments(db.Model):
-     __tablename__ = 'appointment'
+    __tablename__ = 'appointment'
 
-     appointmentId = db.Column(db.Integer,primary_key=True)
-     doctorId = db.Column(db.Integer,nullable = False)
-     appointmentDate = db.Column(db.Date,nullable=False)
-     patientId = db.Column(db.Integer,nullable=False)
-     appointmentTime = db.Column(db.String,nullable=False)
+    appointmentId = db.Column(db.Integer,primary_key=True)
+    doctorId = db.Column(db.Integer,nullable = False)
+    appointmentDate = db.Column(db.Date,nullable=False)
+    patientId = db.Column(db.Integer,nullable=False)
+    appointmentTime = db.Column(db.String,nullable=False)
 
-     def __repr__(self):
-          return ""
+    def __repr__(self):
+        return ""
      
-     def get_id(self):
-          return self.appointmentId
+    def get_id(self):
+        return self.appointmentId
+     
+class Orders(db.Model):
+    __tablename__ = 'orders'
+
+    orderId = db.Column(db.Integer,primary_key=True)
+    doctorId = db.Column(db.Integer,nullable=False)
+    orderDate = db.Column(db.Date,nullable=False)
+    chemistId = db.Column(db.Integer,nullable=False)
+    billAmount = db.Column(db.String,nullable=False)
+    status = db.Column(db.String,nullable=False)
+
+    def __repr__(self):
+        return ""
+     
+    def get_id(self):
+        return self.orderId
+    
+class OrderMedicine(db.Model):
+    
+    __tablename__ = 'ordermedicine'
+
+    id = db.Column(db.Integer,primary_key=True)
+    orderId = db.Column(db.Integer,nullable=False)
+    medicineId = db.Column(db.Integer,nullable=False)
+    medicineName = db.Column(db.String,nullable=False)
+    quantity = db.Column(db.Integer,nullable=False)
+    totalPrice = db.Column(db.String,nullable=False)
+    pricePerUnit = db.Column(db.String,nullable=False)
+    
+    def __repr__(self):
+        return ""
+     
+    def get_id(self):
+        return self.id

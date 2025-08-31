@@ -1,0 +1,982 @@
+{% extends 'base.html '%}
+
+{% block title%}Doctor Dashboard{% endblock %}
+
+{% block content %}
+    <style>
+        body {
+            background: var(--color-5);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            width: 260px;
+            background: var(--color-5);
+            color: var(--color-5);
+            min-height: 100vh;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.07);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding-top: 40px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 10;
+        }
+        .sidebar h2 {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--color-4);
+            margin: 0 0 32px 32px;
+            letter-spacing: 1px;
+        }
+        .sidebar nav {
+            width: 100%;
+        }
+        .sidebar nav a {
+            display: block;
+            padding: 16px 32px;
+            color: var(--color-1);
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-left: 4px solid transparent;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .sidebar nav a.active, .sidebar nav a:hover {
+            background: var(--color-1);
+            color: var(--color-4);
+            border-left: 4px solid var(--color-4);
+        }
+        .sidebar nav a i {
+            width: 20px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 40px 32px;
+            width: 100%;
+            min-height: 100vh;
+            background: rgba(255,255,255,0.97);
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-card h3 {
+            color: var(--color-5);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Patient List Styles */
+        .patient-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .patient-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--color-3);
+        }
+
+        .patient-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--color-5);
+        }
+
+        .patient-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .patient-info p {
+            margin: 0;
+            color: black;
+        }
+
+        .patient-info strong {
+            color: var(--color-5);
+        }
+
+        .prescription-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--color-3);
+        }
+
+        .prescription-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background-color: var(--color-5);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--color-4);
+        }
+
+        /* Appointment Styles */
+        .appointment-list {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .appointment-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .appointment-info h3 {
+            margin: 0 0 10px 0;
+            color: var(--color-5);
+        }
+
+        .appointment-info p {
+            margin: 5px 0;
+            color: var(--color-4);
+        }
+
+        .appointment-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--color-5);
+            color: var(--color-5);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            background: var(--color-5);
+            color: white;
+        }
+
+        .rating {
+            color: #FFC107;
+            margin: 5px 0;
+        }
+
+        .rating span {
+            margin-right: 2px;
+        }
+
+        .open-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .status-open {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-closed {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Add modal styles */
+        .modal {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal-content.success .modal-header h2 {
+            color: #4CAF50;
+        }
+
+        .modal-content.error .modal-header h2 {
+            color: #f44336;
+        }
+        
+        .modal-header h2 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+
+        .modal-body p {
+            font-size: 1em;
+            color: var(--color-5);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-footer .close-btn {
+            background-color: var(--color-4);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-footer .close-btn:hover {
+            background-color: var(--color-5);
+        }
+
+        .medicine-order-form {
+            margin-top: 20px;
+        }
+
+        .medicine-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--color-3);
+        }
+
+        .medicine-item:last-child {
+            border-bottom: none;
+        }
+
+        .add-medicine-btn {
+            background: var(--color-5);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .remove-medicine-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .order-summary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--color-3);
+        }
+
+        .total-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--color-5);
+            text-align: right;
+            margin: 15px 0;
+        }
+
+        .order-notes {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            margin-top: 10px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .medicine-search {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .medicine-suggestions {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .medicine-suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--color-3);
+        }
+
+        .medicine-suggestion-item:hover {
+            background: #f5f5f5;
+        }
+
+        .medicine-suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Add these styles to the existing styles section */
+        .prescription-form {
+            margin-top: 20px;
+        }
+
+        .prescription-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .prescription-form label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--color-5);
+            font-weight: 500;
+        }
+
+        .prescription-form input,
+        .prescription-form textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .prescription-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .prescription-medicine-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--color-3);
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .prescription-medicine-item select,
+        .prescription-medicine-item input {
+            padding: 8px;
+            border: 1px solid var(--color-3);
+            border-radius: 4px;
+        }
+
+        .prescription-medicine-item .remove-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding-top: 20px;
+            }
+            .sidebar h2 {
+                display: none;
+            }
+            .sidebar nav a {
+                padding: 14px 10px;
+                font-size: 0.95rem;
+                text-align: center;
+            }
+            .main-content {
+                margin-left: 70px;
+                padding: 24px 8px;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .patient-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Add these styles to the existing styles section */
+        .chemist-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .chemist-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .chemist-card h3 {
+            color: var(--color-5);
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .chemist-info {
+            margin-bottom: 15px;
+        }
+
+        .chemist-info p {
+            margin: 5px 0;
+            color: black;
+        }
+
+        .chemist-info strong {
+            color: var(--color-5);
+        }
+
+        .chemist-distance {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .chemist-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .chemist-actions .btn {
+            flex: 1;
+            text-align: center;
+        }
+
+        .chemist-card-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .rating {
+            color: #FFC107;
+            margin: 5px 0;
+        }
+
+        .rating span {
+            margin-right: 2px;
+        }
+
+        .open-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .status-open {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-closed {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Add these styles to the existing styles section*/
+        .profile-form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .profile-form .form-group {
+            margin-bottom: 20px;
+        }
+        
+        #clinic-address {
+        min-height: 100px;
+        width: 100%;
+        resize: none;
+        padding: 10px;
+        border: 1px solid var(--color-3);
+        border-radius: 5px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    /* Billing Sytem */
+    .billing-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .billing-section {
+        padding: 20px;
+        border-bottom: 2px solid var(--color-3);
+    }
+
+    .billing-section:last-child {
+        border-bottom: none;
+    }
+
+    .billing-section h2 {
+        color: var(--color-5);
+        margin-bottom: 20px;
+        font-size: 1.5em;
+    }
+
+    .price-display {
+        margin: 20px 0;
+        padding: 10px;
+        font-size: 1.2em;
+        color: var(--color-5);
+        text-align: right;
+    }
+
+    .btn {
+        background-color: var(--color-5);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        width: 100%;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+        background-color: var(--color-4);
+    }
+
+    .add-to-cart-btn {
+        background-color: var(--color-5);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        width: 100%;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+    }
+
+    .add-to-cart-btn:hover {
+        background-color: var(--color-4);
+    }
+
+    .generate-bill-btn {
+        background-color: var(--color-5);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        width: 100%;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+    }
+
+    .generate-bill-btn:hover {
+        background-color: var(--color-4);
+    }
+
+    .cart-items {
+        max-height: 300px;
+        overflow-y: auto;
+        margin: 15px 0;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .cart-item {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--color-3);
+        align-items: center;
+    }
+
+    .cart-item button {
+        padding: 5px 10px;
+        background: #ff4444;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    .cart-summary {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid var(--color-3);
+    }
+
+    .total {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: var(--color-5);
+        margin: 20px 0;
+        text-align: right;
+    }
+
+    </style>
+<body>
+    <aside class="sidebar">
+        <h2>Hello, {{ current_user.doctorName }}</h2>
+        <nav>
+            <a href="/doctor#dashboard" onclick="showSection(event, 'dashboard')">Dashboard</a>
+            <a href="/doctor#patients" onclick="showSection(event, 'patients')">Patients</a>
+            <a href="/doctor#appointments" onclick="showSection(event, 'appointments')">Appointments</a>
+            <a href="/doctor#order-medicine" class="active" onclick="showSection(event, 'order-medicine')">Order Medicine</a>
+            <a href="/doctor#view-orders" onclick="showSection(event, 'view-orders')">View Orders</a>
+            <a href="/doctor#profile" onclick="showSection(event, 'profile')">Profile</a>
+            <a href="/logout" style="border-top: 1px solid var(--color-3); margin-top: 30px; padding-top: 16px;">Logout</a>
+
+        </nav>
+    </aside>
+    <main class="main-content">
+        <section>
+            <div class="billing-sections">
+                <!-- Drug Selection Section -->
+                <div class="billing-section">
+                    <h2>Add Medicines</h2>
+                    <div class="form-group center-label">
+                        <form name="billing-system" id="billing-system-form" class="billing-system-form" method="post" action="{{ url_for('generateBill')}}">
+                        <input type="text" id="search-drug" list="available-medicines" placeholder="Search medicines..." required>
+                        <datalist id="available-medicines"></datalist>
+                    </div>
+                    <div class="form-group center-label quantity-group" style="display: flex; align-items: center; gap:50%">
+                        <input type="number" id="quantity" value="1" min="1" max="50" style="max-width: 20%; text-align: center" required>
+                        <button class="submit-btn" type="button" onclick="addToCart()">Add to Cart</button>
+                    </div>
+                    <input type="hidden" id="chemistId" value="{{ chemistId }}">
+                </form>
+                </div>
+
+                <!-- Shopping Cart Section -->
+                <div class="billing-section">
+                    <h2>Shopping Cart</h2>
+                    <div class="cart-items" id="cart-items">
+                        <!-- Cart items will be added here -->
+                    </div>
+                    <div>
+                        <div class="total">Total: ₹<span id="total-amount">0.00</span></div>
+                        <button class="submit-btn" type="button" onclick="sendOrder()">Send Order</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="my-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title"></h2>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message"></p>
+                </div>
+                <div class="modal-footer">
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden flash messages container -->
+        <div id="flash-messages-container" style="display: none;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message" data-category="{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+    </main>
+</body>
+
+<script>
+
+    let registeredDrugs = [];
+    let cart = [];
+
+    const modal = document.getElementById('my-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
+    const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
+
+    function showPopup(title, message, type = 'info', buttons = []) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalContent.classList.remove('success', 'error', 'info', 'loading');
+        modalContent.classList.add(type);
+        modalFooter.innerHTML = '';
+    
+        if (buttons.length > 0) {
+            buttons.forEach(btnConfig => {
+                const buttonElement = document.createElement('button');
+                buttonElement.textContent = btnConfig.text;
+                buttonElement.className = btnConfig.className;
+                buttonElement.setAttribute('onclick', btnConfig.onclick);
+                modalFooter.appendChild(buttonElement);
+            });
+        } else {
+            const buttonElement = document.createElement('button');
+            buttonElement.textContent = 'OK';
+            buttonElement.className = 'card-btn';
+            buttonElement.setAttribute('onclick', 'hidePopup()');
+            modalFooter.appendChild(buttonElement);
+        }
+    
+        modal.style.display = 'flex';
+    }
+
+    function showInfoPopup(title, message, type = 'info') {
+        const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
+        showPopup(title, message, type, buttons);
+    }
+    
+    /**
+    * Hides the custom popup.
+    */
+    function hidePopup() {
+        modal.style.display = 'none';
+    }
+
+
+    async function fetchMedicines() {
+        try {
+            const chemistId = document.getElementById('chemistId').value;
+            const response = await fetch(`/search-medicine?user_type=doctor&chemistId=${chemistId}`); // Make GET request to your API endpoint
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const medicines = await response.json(); // Parse the JSON response into a JavaScript array of objects
+            console.log("Medicines fetched from API:", medicines);
+            return medicines; // Return the JavaScript array
+        } catch (error) {
+            console.error("Error fetching medicines:", error);
+            return []; // Return an empty array on error
+        }
+    }
+
+    // Example usage:
+    // Call this function when you need the data, e.g., on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        registeredDrugs = await fetchMedicines();
+        updateDrugList();
+        console.log("Registered Drugs ready for use:", registeredDrugs);
+    });
+
+    // Function to update the drug datalist
+    function updateDrugList() {
+        const drugList = document.getElementById('available-medicines');
+        drugList.innerHTML = '';
+        registeredDrugs.forEach(drug => {
+            const option = document.createElement('option');
+            option.value = drug.name;
+            option.setAttribute('data-price', drug.price);
+            drugList.appendChild(option);
+        });
+    }
+
+    function addToCart() {
+        const searchInput = document.getElementById('search-drug');
+        const quantityInput = document.getElementById('quantity'); 
+        const selectedDrug = registeredDrugs.find(drug => drug.name === searchInput.value);
+
+        if (!selectedDrug) {
+            showPopup('Error', 'Please select a valid medicine from the list.', 'error');
+            return;
+        }
+
+        const quantity = parseInt(quantityInput.value);
+        if (!quantity || quantity < 1) {
+            showPopup('Error', 'Please enter a valid quantity.', 'error');
+            return;
+        }
+
+        const existingCartItem = cart.find(item => item.name === selectedDrug.name);
+
+        if (existingCartItem) {
+            existingCartItem.quantity += quantity;
+            existingCartItem.total = (existingCartItem.price * existingCartItem.quantity);
+        } else {
+            const cartItem = {
+                id: selectedDrug.id,
+                name: selectedDrug.name,
+                quantity: quantity,
+                price: selectedDrug.price,
+                total: (selectedDrug.price * quantity)
+            };
+            cart.push(cartItem);
+        }
+        console.log(cart);
+        updateCartDisplay();
+        clearForm();
+    }
+
+    // Function to remove item from cart
+    function removeFromCart(itemId) {
+        cart = cart.filter(item => item.id !== itemId);
+        updateCartDisplay();
+    }
+
+    // Function to update cart display
+    function updateCartDisplay() {
+        const cartContainer = document.getElementById('cart-items');
+        const totalAmount = document.getElementById('total-amount');
+        
+        cartContainer.innerHTML = '';
+        let total = 0;
+        
+        cart.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'cart-item';
+            itemElement.innerHTML = `
+                <div>${item.name}</div>
+                <div>${item.quantity}</div>
+                <div>₹${item.total.toFixed(2)}</div>
+                <button onclick="removeFromCart(${item.id})">×</button>
+            `;
+            cartContainer.appendChild(itemElement);
+            total += item.total;
+
+        });
+        
+        totalAmount.textContent = total.toFixed(2);
+    }
+
+    // Function to clear the form
+    function clearForm() {
+        document.getElementById('search-drug').value = '';
+        document.getElementById('quantity').value = '1';
+    }
+
+    function sendOrder(){
+        const chemistId = document.getElementById('chemistId').value;
+        if (cart.length === 0) {
+            showPopup('Error', 'Your cart is empty. Please add medicines before sending the order.', 'error');
+            return;
+        }
+
+        fetch(`/order-medicine/${chemistId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_details: cart
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showPopup('Success', data.message, 'success',buttons=[{ text: 'OK', className: 'card-btn', onclick: "window.location.href = '/doctor#order-medicine' "}]);
+                cart = []; // Clear the cart
+                updateCartDisplay();
+            } else {
+                showPopup('Error', data.message, 'error');
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            showPopup('Error', error.message , 'error');
+        });
+        
+    }
+
+</script>
+{% endblock %}

@@ -153,23 +153,27 @@
       }
 
       // Handle active tab based on session data
-      document.addEventListener('DOMContentLoaded', function() {
-        {% if active_tab %}
-          const activeTab = '{{ active_tab }}';
-          const tabButton = document.querySelector(`[data-tab="${activeTab}"]`);
-          if (tabButton) {
-            // Remove active class from all tabs and forms
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
-            
-            // Activate the correct tab and form
-            tabButton.classList.add('active');
-            const targetForm = document.getElementById(`${activeTab}-form`);
-            if (targetForm) {
-              targetForm.classList.add('active');
-            }
-          }
-        {% endif %}
-      });
+	  <script>
+		document.addEventListener('DOMContentLoaded', function() {
+			// Only run the script if an active_tab is passed from the server
+			if ('{{ active_tab }}') {
+				const activeTab = '{{ active_tab }}';
+				const tabButton = document.querySelector(`[data-tab="${activeTab}"]`);
+				
+				if (tabButton) {
+					// Remove active class from all tabs and forms
+					document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+					document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+					
+					// Activate the correct tab and form based on the active_tab variable
+					tabButton.classList.add('active');
+					const targetForm = document.getElementById(`${activeTab}-form`);
+					if (targetForm) {
+						targetForm.classList.add('active');
+					}
+				}
+			}
+		});
+	</script>
     </script>
 {% endblock %}

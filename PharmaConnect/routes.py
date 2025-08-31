@@ -1,18 +1,117 @@
 from flask import render_template,request,redirect,session,flash,jsonify,url_for,json,make_response
-from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments
+from models import Chemist,Doctor,Patient,Medicine,Sales,Customers,Purchase,Appointments,OrderMedicine,Orders
 from flask_login import login_user,logout_user,current_user,login_required
 from datetime import datetime,date,timedelta
 from dateutil.relativedelta import relativedelta
-from api import YOUR_API_KEY,BASE_64_STRING
+from api import YOUR_API_KEY,BASE_64_STRING,MAPS_API_KEY
 import pdfkit
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-
+import json
+from sqlalchemy import and_
+import requests
 
 def register_routes(app,db,bcrypt):
+
+    def get_distance_matrix(location, api_key):
+        """
+        Calls the Google Maps Distance Matrix API to get travel distance and time
+        for multiple origin-destination pairs.
+
+        Args:
+            location (dict): A dictionary containing 'originList', 'destinationList',
+                            and 'destinationId' lists.
+            api_key (str): Your Google Maps API key.
+
+        Returns:
+            list: A list of dictionaries with analysis results, or None if the request fails.
+        """
+        # Base URL for the Distance Matrix API
+        base_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+
+        origins = location['originList']
+        destinations = location['destinationList']
+        destinationId = location['destinationId']
+
+        origins_str = "|".join(origins)
+        destinations_str = "|".join(destinations)
+
+        # Set up the parameters for the API request
+        params = {
+            "origins": origins_str,
+            "destinations": destinations_str,
+            "key": api_key
+        }
+
+        try:
+            # Make the GET request to the API
+            response = requests.get(base_url, params=params)
+            
+            # Raise an exception for bad status codes (4xx or 5xx)
+            response.raise_for_status()
+
+            # Parse the JSON response
+            data = response.json()
+            
+            # Check for API errors in the response
+            if data.get("status") != "OK":
+                print(f"API Error: {data.get('error_message', 'No error message provided.')}")
+                return None
+            
+            # Pass the data and destination IDs to the analysis function
+            return analyze_distance_data(data, destinationId)
+
+        except requests.exceptions.RequestException as e:
+            # Handle network or HTTP-related errors
+            print(f"Request failed: {e}")
+            return None
+
+    def analyze_distance_data(data, destination_ids):
+        """
+        Parses the JSON response from the Distance Matrix API to get original
+        addresses, destination IDs, and distance for all origin-destination pairs.
+
+        Args:
+            data (dict): The JSON response from the get_distance_matrix function.
+            destination_ids (list): A list of IDs corresponding to the destinations.
+
+        Returns:
+            list: A list of dictionaries, where each dictionary contains the
+                origin, destination, destinationId, and distance for a single pair.
+        """
+        if not data or "rows" not in data or not data["rows"]:
+            print("Invalid or empty data provided.")
+            return []
+
+        results = []
+        # Loop through each origin address provided in the request
+        for i, row in enumerate(data["rows"]):
+            # Loop through each destination address for the current origin
+            for j, element in enumerate(row["elements"]):
+                # Check the status of the specific route
+                if element["status"] == "OK":
+                    origin_address = data["origin_addresses"][i]
+                    destination_address = data["destination_addresses"][j]
+                    distance = element["distance"]["text"]
+                    duration = element["duration"]["text"]
+                    
+                    # Retrieve the destination ID using the same index
+                    destination_id = destination_ids[j]
+
+                    results.append({
+                        "origin_address": origin_address,
+                        "destination_address": destination_address,
+                        "destination_id": destination_id,
+                        "distance": distance,
+                        "duration": duration
+                    })
+                else:
+                    print(f"Route from '{data['origin_addresses'][i]}' to '{data['destination_addresses'][j]}' not found. Status: {element['status']}")
+        
+        return results
 
     #Chat bot for user 
     def bot(input):
@@ -246,11 +345,10 @@ def register_routes(app,db,bcrypt):
     def chemist():
         if session['user_type'] == "chemist":
             chemist = Chemist.query.get(current_user.chemistId)
-            medicineList = Medicine.query.all()
+            medicineList = Medicine.query.filter_by(chemistId=current_user.chemistId).all()
             med = []
             for i in medicineList:
                 med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
-            
             if request.method == "POST":
                 formName = request.form.get('form_name')
 
@@ -327,6 +425,7 @@ def register_routes(app,db,bcrypt):
                         doctor.specialization = str(specialization)
                         doctor.address = str(address)
                         db.session.commit()
+                    flash("Profile Updated Successfully","success")
                     return render_template('doctor.html',
                                         name = doctor.doctorName,
                                         email = doctor.doctorEmail,
@@ -342,6 +441,44 @@ def register_routes(app,db,bcrypt):
                                     specialization = doctor.specialization)
         else:
             return redirect('/permission')
+        
+    @app.route('/order-medicine/<int:chemistId>',methods=['GET','POST'])
+    @login_required
+    def order_medicine(chemistId):
+        if request.method == "GET":
+            return render_template('order_medicine.html',chemistId=chemistId)
+        else:
+            billamount = 0
+            orderId = Orders.query.order_by(Orders.orderId.desc()).limit(1).first()
+            if orderId:
+                orderId = orderId.orderId + 1
+            else:
+                orderId = 1 
+            data = request.get_json()
+            if data:
+                cart = data.get('order_details')
+                orderDate = datetime.now().date()
+                print(cart)
+                try:
+                    for i in cart:
+                        ordermedicine = OrderMedicine(orderId=orderId,
+                                                    medicineId=i['id'],
+                                                    quantity=i['quantity'],
+                                                    medicineName = i['name'],
+                                                    pricePerUnit = float(i['price']),
+                                                    totalPrice = float(i['total']))
+                        billamount += float(i['total'])
+                        db.session.add(ordermedicine)
+                    order = Orders(orderId=orderId,doctorId=current_user.doctorId,orderDate=orderDate,chemistId=chemistId,status="pending",billAmount=billamount)
+                    db.session.add(order)
+                    db.session.commit()
+                    return jsonify({"success": True, "message": "Order Placed Successfully"}),200
+                except Exception as e:
+                    db.session.rollback()
+                    return jsonify({"success": False, "message": f"An unexpected error occurred: {str(e)}"}), 500
+            else:
+                return jsonify({"success": False, "message": "No data provided"})
+
     
     # Patient Page
     @app.route('/patient',methods=['GET','POST'])
@@ -365,12 +502,10 @@ def register_routes(app,db,bcrypt):
                     contactno = request.form.get('patient_phone')
                     address = request.form.get('patient_address')
                     gender = request.form.get('patient_gender')
-                    
                     if patient:
                         patient.contactNumber = str(contactno)
                         patient.address = str(address)
                         patient.gender = str(gender)
-                        
                         db.session.commit()
                     
                     return render_template('patient.html',
@@ -404,11 +539,22 @@ def register_routes(app,db,bcrypt):
     # Medicine Data Route
     @app.route('/search-medicine')
     def search_medicine():
-        medicineList = Medicine.query.all()
-        med = []
-        for i in medicineList:
-            med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
-        return jsonify(med)
+        user_type = request.args.get('user_type')
+        if user_type == "chemist":
+            medicineList = Medicine.query.filter_by(chemistId=current_user.chemistId).all()
+            med = []
+            for i in medicineList:
+                med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
+            return jsonify(med)
+        elif user_type == "doctor":
+            chemistId = request.args.get('chemistId')
+            medicineList = Medicine.query.filter_by(chemistId=chemistId).all()
+            med = []
+            for i in medicineList:
+                med.append({'id':i.medicineId,'name':i.medicineName,'price':i.medicinePrice,'batch':i.batchNo,'quantity':i.stock})
+            return jsonify(med)
+        else:
+            return jsonify()
     
     # New Route to get expired and expiring medicines
     @app.route('/expired-and-expiring-medicines')
@@ -472,63 +618,69 @@ def register_routes(app,db,bcrypt):
     @app.route('/generate-bill',methods=['POST'])
     @login_required
     def generateBill():
-        data = request.form.get('billing_cart')
-        name = request.form.get('customer_name')
-        email = request.form.get('customer_email').lower()
-        billAmount = request.form.get('bill_amount')
-        if data:
-            cart = json.loads(data)
-            billId = Sales.query.filter(Sales.chemistId == current_user.chemistId).order_by(Sales.salesId.desc()).limit(1).first()
-            if billId:
-                billId = billId.salesId + 1
-            else:
-                billId = 1
-            
-            try:
-                for i in cart:
-                    medicine_name = i['name']
-                    quantity = i['quantity']
-                    totalPrice = float(i['total'])
-                    pricePerUnit = float(i['price'])
-                    date = datetime.now().date()
-                    chemistId = current_user.chemistId
-
-                    # Sales Input
-                    sales = Sales(billId=billId,name=medicine_name,quantity=quantity,pricePerUnit=pricePerUnit,totalPrice=totalPrice,date=date,chemistId=chemistId)
-                    db.session.add(sales)
-
-                    medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
-                    medicine.stock -= quantity
-                
-                # Checks Customer
-                customer = Customers.query.filter(Customers.customerEmail == email).first()
-                if customer is None:
-                    customer = Customers(customerEmail=email,customerName=name)
-                    db.session.add(customer)
-                    db.session.commit()
-                    db.session.flush()  
-                    db.session.refresh(customer)
-                    customerId = customer.customerId
-                else:
-                    customerId = customer.customerId
-
-                # Purchase table input
-                purchase = Purchase(customerId=customerId,billAmount=float(billAmount),chemistId=chemistId,billId=billId)
-                db.session.add(purchase)
-                db.session.commit()
-
-                if billId:
-                    return redirect(url_for('generate_pdf', billId=billId))
-                
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Error generating bill: {str(e)}", 'error')
-                return redirect(url_for('chemist')+'#billing')
-            
-
+        
+        chemist = Chemist.query.get(current_user.chemistId)
+        if chemist.address is None or chemist.contactNumber is None:
+            flash("Setup profile first","error")
+            return redirect(url_for('chemist')+'#billing')
         else:
-            pass
-        return redirect(url_for('chemist')+'#billing')
+            data = request.form.get('billing_cart')
+            name = request.form.get('customer_name')
+            email = request.form.get('customer_email').lower()
+            billAmount = request.form.get('bill_amount')
+            if data:
+                cart = json.loads(data)
+                billId = Sales.query.filter(Sales.chemistId == current_user.chemistId).order_by(Sales.salesId.desc()).limit(1).first()
+                if billId:
+                    billId = billId.salesId + 1
+                else:
+                    billId = 1
+                
+                try:
+                    for i in cart:
+                        medicine_name = i['name']
+                        quantity = i['quantity']
+                        totalPrice = float(i['total'])
+                        pricePerUnit = float(i['price'])
+                        date = datetime.now().date()
+                        chemistId = current_user.chemistId
+
+                        # Sales Input
+                        sales = Sales(billId=billId,name=medicine_name,quantity=quantity,pricePerUnit=pricePerUnit,totalPrice=totalPrice,date=date,chemistId=chemistId)
+                        db.session.add(sales)
+
+                        medicine = Medicine.query.filter(Medicine.medicineName == medicine_name).first()
+                        medicine.stock -= quantity
+                    
+                    # Checks Customer
+                    customer = Customers.query.filter(Customers.customerEmail == email).first()
+                    if customer is None:
+                        customer = Customers(customerEmail=email,customerName=name)
+                        db.session.add(customer)
+                        db.session.commit()
+                        db.session.flush()  
+                        db.session.refresh(customer)
+                        customerId = customer.customerId
+                    else:
+                        customerId = customer.customerId
+
+                    # Purchase table input
+                    purchase = Purchase(customerId=customerId,billAmount=float(billAmount),chemistId=chemistId,billId=billId)
+                    db.session.add(purchase)
+                    db.session.commit()
+
+                    if billId:
+                        return redirect(url_for('generate_pdf', billId=billId))
+                    
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f"Error generating bill: {str(e)}", 'error')
+                    return redirect(url_for('chemist')+'#billing')
+                
+
+            else:
+                pass
+            return redirect(url_for('chemist')+'#billing')
     
     @app.route('/generate-pdf/<int:billId>')
     @login_required
@@ -613,18 +765,35 @@ def register_routes(app,db,bcrypt):
                 }
         return jsonify(data)
     
-    @app.route('/stock-data/<keyword>')
+    @app.route('/search-bar/<keyword>')
     @login_required
     def stockdata(keyword):
-        medicine = Medicine.query.filter_by(chemistId = current_user.chemistId).filter(Medicine.medicineName.ilike(f"%{keyword}%")).all()
-        data = []
-        for i in medicine:
-            data.append({"medicineId":i.medicineId,
-                         "medicineName":i.medicineName,
-                         "stock":i.stock,
-                         "medicinePrice":i.medicinePrice,
-                         "companyName":i.companyName})
-        return jsonify(data)
+        sectionId = request.args.get('section')
+        if sectionId == "stock-management":
+            medicine = Medicine.query.filter_by(chemistId = current_user.chemistId).filter(Medicine.medicineName.ilike(f"%{keyword}%")).all()
+            data = []
+            for i in medicine:
+                data.append({"medicineId":i.medicineId,
+                            "medicineName":i.medicineName,
+                            "stock":i.stock,
+                            "medicinePrice":i.medicinePrice,
+                            "companyName":i.companyName})
+            return jsonify(data)
+        elif sectionId == "order-medicine":
+            chemist = Chemist.query.filter(Chemist.address.isnot(None),Chemist.shopname.ilike(f"%{keyword}%")).all()
+            doctor = Doctor.query.get(current_user.doctorId)
+            if chemist:
+                destinationList = []
+                destinationId = []
+                for i in chemist:
+                    destinationList.append(i.address)
+                    destinationId.append({"chemistId":i.chemistId,"address":i.address,"shopname":i.shopname,"chemistName":i.chemistName,"contactNumber":i.contactNumber})
+                locations = {"destinationList":destinationList,"originList":[doctor.address],"destinationId":destinationId}
+                shopnames = get_distance_matrix(locations,MAPS_API_KEY)
+                return jsonify(shopnames)
+            return jsonify("No chemist found")
+        else:
+            return {}
     
     @app.route('/delete/<medicineId>',methods=['POST'])
     @login_required
@@ -656,3 +825,65 @@ def register_routes(app,db,bcrypt):
                 return jsonify({"message":"Medicine updated successfully"}),200
             else:
                 return jsonify({"message":"Medicine not found"}),404
+        
+    @app.route('/distance-calculator')
+    @login_required
+    def distanceCalculator():
+        chemist = Chemist.query.filter(Chemist.address.isnot(None)).all()
+        doctor = Doctor.query.get(current_user.doctorId)
+        destinationList = []
+        destinationId = []
+        for i in chemist:
+            destinationList.append(i.address)
+            destinationId.append({"chemistId":i.chemistId,"address":i.address,"shopname":i.shopname,"chemistName":i.chemistName,"contactNumber":i.contactNumber})
+        originList = [doctor.address]
+
+        locations = {"destinationList":destinationList,"originList":originList,"destinationId":destinationId}
+
+        data = get_distance_matrix(locations,MAPS_API_KEY)
+        return jsonify(data)
+    
+    @app.route('/get-orders')
+    @login_required
+    def get_orders():
+        userType = request.args.get('userType')
+        status = request.args.get('status')
+        if userType == "doctor":
+            if status == "all":
+                orders = Orders.query.filter_by(doctorId=current_user.doctorId).all()
+                data = []
+                for i in orders:
+                    chemist = Chemist.query.filter_by(chemistId=i.chemistId).first()
+                    doctor = Doctor.query.filter_by(doctorId=current_user.doctorId).first()
+                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
+                return jsonify(data)
+            
+            elif status == "pending" or status == "delivered" or status == "not-delivered":
+                orders = Orders.query.filter_by(doctorId=current_user.doctorId,status=status).all()
+                data = []
+                for i in orders:
+                    chemist = Chemist.query.filter_by(chemistId=i.chemistId).first()
+                    doctor = Doctor.query.filter_by(doctorId=current_user.doctorId).first()
+                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
+                return jsonify(data)
+            
+            else:
+                return jsonify({"message":"Invalid status"}),404
+        elif userType == "chemist":
+            if status == "all":
+                orders = Orders.query.filter_by(chemistId=current_user.chemistId).all()
+                data = []
+                for i in orders:
+                    doctor = Doctor.query.filter_by(doctorId=i.doctorId).first()
+                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
+                return jsonify(data)
+            
+            elif status == "pending" or status == "delivered" or status == "not-delivered":
+                orders = Orders.query.filter_by(chemistId=current_user.chemistId,status=status).all()
+                data = []
+                for i in orders:
+                    doctor = Doctor.query.filter_by(doctorId=i.doctorId).first()
+                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
+                return jsonify(data)
+            
+                    

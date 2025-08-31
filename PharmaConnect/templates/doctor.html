@@ -500,6 +500,13 @@
             text-align: center;
         }
 
+        .chemist-card-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
         .rating {
             color: #FFC107;
             margin: 5px 0;
@@ -552,22 +559,22 @@
     }
 
     </style>
-</head>
 <body>
     <aside class="sidebar">
         <h2>Hello, {{ current_user.doctorName }}</h2>
         <nav>
-            <a href="#dashboard" class="active" onclick="showSection(event, 'dashboard')">Dashboard</a>
+            <a href="#dashboard"  onclick="showSection(event, 'dashboard')">Dashboard</a>
             <a href="#patients" onclick="showSection(event, 'patients')">Patients</a>
             <a href="#appointments" onclick="showSection(event, 'appointments')">Appointments</a>
-            <a href="#nearby-chemists" onclick="showSection(event, 'nearby-chemists')">Nearby Chemists</a>
+            <a href="#order-medicine" onclick="showSection(event, 'order-medicine')">Order Medicine</a>
+            <a href="#my-orders" onclick="showSection(event, 'my-orders')">My Orders</a>
             <a href="#profile" onclick="showSection(event, 'profile')">Profile</a>
             <a href="/logout" style="border-top: 1px solid var(--color-3); margin-top: 30px; padding-top: 16px;">Logout</a>
         </nav>
     </aside>
     <main class="main-content">
         <!-- Dashboard Section -->
-        <section id="dashboard" class="section active">
+        <section id="dashboard" class="section">
             <h2>Dashboard</h2>
             <div class="dashboard-grid">
                 <div class="dashboard-card">
@@ -618,14 +625,26 @@
         </section>
 
         <!-- Nearby Chemists Section -->
-        <section id="nearby-chemists" class="section">
-            <h2>Nearby Registered Chemists</h2>
-            <div class="search-box" style="margin-bottom: 20px;">
-                <input type="text" id="chemist-search" placeholder="Search chemists by name or location..." 
-                       style="width: 100%; padding: 10px; border: 1px solid var(--color-3); border-radius: 5px;">
+        <section id="order-medicine" class="section">
+            <h2>Order Medicine</h2>
+            <div class="input-group">
+                <input type="text" id="search-bar-order-medicine" style="width:89%" placeholder="Search shopname..." required>
+                <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="orderMedicineSearchBar()" >Search</button>
             </div>
-            <div class="chemists-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                <!-- Will be populated by JavaScript -->
+            <div id="searchText"></div>
+            <div id="chemist-list" style="display: flex; gap:2.5%; flex-wrap: wrap;"></div>
+        </section>
+
+        <section id="my-orders" class="section register-drug-section" style="min-height: 615px;;">
+            <h2>My Orders</h2>
+            <div>
+                <button class="order-status status-all" onclick="allOrders()">All</button>
+                <button class="order-status status-pending" onclick="specificOrders('pending')">Pending</button>
+                <button class="order-status status-not-delivered" onclick="specificOrders('not-delivered')">Not Delivered</button>
+                <button class="order-status status-delivered" onclick="specificOrders('delivered')">Delivered</button>
+            </div>
+            <div id="order-list" class="order-list">
+                <!-- Order cards will be populated here -->
             </div>
         </section>
 
@@ -650,9 +669,10 @@
                 <div class="form-group">
                     <textarea id="clinic-address" name="clinic_address" placeholder="Clinic Address" required readonly>{% if address %}{{ address }}{% endif %}</textarea>
                 </div>
-                <button type="submit" class="submit-btn" id="update-profile-btn" disabled>Update Profile</button>
+                <button type="submit" class="submit-btn" id="update-profile-btn">Update Profile</button>
             </form>
         </section>
+
     </main>
 
     <!-- Add Prescription Modal -->
@@ -691,67 +711,92 @@
         </div>
     </div>
 
-    <!-- Keep the existing Order Medicine Modal -->
-    <div id="orderMedicineModal" class="modal">
+    <!-- Modal Structure -->
+
+    <div id="my-modal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="closeOrderModal()">&times;</span>
-            <h2>Order Medicines</h2>
-            <div id="selectedChemistInfo"></div>
-            
-            <div class="medicine-order-form">
-                <input type="text" 
-                       class="medicine-search" 
-                       placeholder="Search medicines..." 
-                       oninput="searchMedicines(this.value)"
-                       id="medicineSearchInput">
-                <div class="medicine-suggestions" id="medicineSuggestions"></div>
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message"></p>
+            </div>
+            <div class="modal-footer">
                 
-                <div id="medicineOrderList">
-                    <!-- Medicine items will be added here -->
-                </div>
-                
-                <button class="add-medicine-btn" onclick="addMedicineItem()">Add Medicine</button>
-                
-                <div class="order-summary">
-                    <textarea class="order-notes" 
-                              placeholder="Add any special instructions or notes for the chemist..."
-                              id="orderNotes"></textarea>
-                    <div class="total-amount">Total: ₹<span id="orderTotal">0.00</span></div>
-                    <button class="btn" onclick="placeOrder()">Place Order</button>
-                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Hidden flash messages container -->
+    <div id="flash-messages-container" style="display: none;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message" data-category="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
     
     <script>
         function showSection(event, sectionId) {
-            if (event) event.preventDefault();
-            const sections = document.querySelectorAll('.section');
-            sections.forEach(section => section.style.display = 'none');
-            const target = document.getElementById(sectionId);
-            if (target) target.style.display = 'block';
-            document.querySelectorAll('.sidebar nav a').forEach(link => {
-                link.classList.remove('active');
-            });
-            const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
-            if (activeLink) activeLink.classList.add('active');
-        }
+                if (event) event.preventDefault();
 
-        window.addEventListener("DOMContentLoaded", () => {
-            // Check if there's an anchor in the URL
-            const anchor = window.location.hash.substring(1); // remove the #
-            if (anchor) {
-                showSection(null, anchor);
-            } else {
-                showSection(null, 'dashboard'); // default section
+                // Hide all sections
+                document.querySelectorAll('.section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                // Show selected section
+                const selectedSection = document.getElementById(sectionId);
+                if (selectedSection) selectedSection.classList.add('active');
+
+                // Remove 'active' class from all links
+                document.querySelectorAll('.sidebar nav a').forEach(link => {
+                    link.classList.remove('active');
+                });
+
+                // Add 'active' class to clicked link
+                const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
+                if (activeLink) activeLink.classList.add('active');
+
+                // Update the URL hash
+                if (sectionId !== 'dashboard') {
+                    history.replaceState(null, null, '#' + sectionId);
+                } else {
+                    history.replaceState(null, null, '#dashboard');
+                }
+
+                if(sectionId === 'order-medicine'){
+                    orderMedicineGUI()
+                }
+
+                if(sectionId === 'my-orders'){
+                    allOrders()
+                }
+            }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+            showSection(null, hash);
+            
+            // New logic to handle flash messages and popups
+            const flashContainer = document.getElementById('flash-messages-container');
+            const flashMessages = flashContainer.querySelectorAll('.flash-message');
+
+            if (flashMessages.length > 0) {
+                const message = flashMessages[0].textContent;
+                const category = flashMessages[0].dataset.category;
+                showPopup(category.charAt(0).toUpperCase() + category.slice(1), message, category);
             }
         });
+
 
         // Edit Profile button logic for Doctor
         const editBtn = document.getElementById('edit-profile-btn');
         const profileForm = document.getElementById('profile-form');
         const phoneInput = document.getElementById('phone');
-        const addressInput = document.getElementById('address');
+        const addressInput = document.getElementById('clinic-address');
         const emailInput = document.getElementById('email');
         const nameInput = document.getElementById('doctor-name');
         const specializationInput = document.getElementById('specialization');
@@ -795,5 +840,299 @@
             specializationInput.setAttribute('readonly', true);
             updateBtn.disabled = true;
         });
+
+
+        const modal = document.getElementById('my-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
+        const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
+
+            function showPopup(title, message, type = 'info', buttons = []) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modalContent.classList.remove('success', 'error', 'info', 'loading');
+                modalContent.classList.add(type);
+                modalFooter.innerHTML = '';
+            
+                if (buttons.length > 0) {
+                    buttons.forEach(btnConfig => {
+                        const buttonElement = document.createElement('button');
+                        buttonElement.textContent = btnConfig.text;
+                        buttonElement.className = btnConfig.className;
+                        buttonElement.setAttribute('onclick', btnConfig.onclick);
+                        modalFooter.appendChild(buttonElement);
+                    });
+                } else {
+                    const buttonElement = document.createElement('button');
+                    buttonElement.textContent = 'OK';
+                    buttonElement.className = 'card-btn';
+                    buttonElement.setAttribute('onclick', 'hidePopup()');
+                    modalFooter.appendChild(buttonElement);
+                }
+            
+                modal.style.display = 'flex';
+            }
+
+            function showInfoPopup(title, message, type = 'info') {
+                const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
+                showPopup(title, message, type, buttons);
+            }
+            
+            /**
+            * Hides the custom popup.
+            */
+            function hidePopup() {
+                modal.style.display = 'none';
+            }
+
+
+        async function orderMedicineGUI(){
+            try {
+                    const response = await fetch('/distance-calculator'); // Make GET request to your API endpoint
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const distances = await response.json(); // Parse the JSON response into a JavaScript array of objects
+                    
+                    const resultsContainer = document.getElementById('chemist-list');
+                    resultsContainer.innerHTML = ''; // Clear previous results 
+
+                    const container = document.getElementById('chemist-list');
+                    distances.forEach(chemist => {
+                        const chemistCard = `
+                            <div class="default-wrapper" style="width: 48.5%;">
+                                <div class="data-container">
+                                    <div class="chemist-card-content" >
+                                        <div class="name-container">
+                                            <h1>${chemist.destination_id.shopname}</h1>
+                                        </div>
+                                        <div class="company-name-container">
+                                            <h4>Owner: ${chemist.destination_id.chemistName}</h4>
+                                            <h4>Address : ${chemist.destination_id.address}</h4>
+                                            <h4>Distance : ${chemist.distance}</h4>
+                                            <h4>Contact : ${chemist.destination_id.contactNumber}</h4>
+                                        <div class="price-container" style="margin-top:20px;">
+                                            <button class="card-btn" id="${chemist.destination_id.chemistId}" onclick="orderMedicine(${chemist.destination_id.chemistId})">Order Medicine</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += chemistCard;
+                    });
+                    
+                    
+                } catch (error) {
+                    showPopup('Error', error.message, 'error');
+                }
+            }
+        
+        async function orderMedicineSearchBar(){
+            try{
+                const searchInput = document.getElementById('search-bar-order-medicine').value ;
+                const resultsContainer = document.getElementById('chemist-list');
+                const textContainer = document.getElementById('searchText');
+                if(searchInput.length === 0){
+                    textContainer.innerHTML = '';
+                    resultsContainer.innerHTML = '';
+                    orderMedicineGUI();
+                }
+                else{
+                    const response = await fetch(`/search-bar/${searchInput}?section=order-medicine`)
+                    if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                    const data = await response.json(); 
+                    
+                    resultsContainer.innerHTML = '';
+    
+                    const container = document.getElementById('chemist-list');
+                    textContainer.innerHTML = '';
+                    textContainer.innerHTML += `<p id="search-text" style="color: var(--color-4); font-weight:600; font-size: 20px; text-align: left; margin-top: 20px;">Showing all results for <b>"${searchInput}"</b></p>`;
+                    
+                    if (data === "No chemist found") {
+                        textContainer.insertAdjacentHTML('beforeend', '<div class="company-name-container" style="text-align: center; margin-top: 20px;">No chemist found.</div>');
+                        return;
+                    }
+                    
+                    
+                    data.forEach(chemist => {
+                            const chemistCard = `
+                                <div class="default-wrapper" style="width: 48.5%;">
+                                    <div class="data-container">
+                                        <div class="chemist-card-content" >
+                                            <div class="name-container">
+                                                <h1>${chemist.destination_id.shopname}</h1>
+                                            </div>
+                                            <div class="company-name-container">
+                                                <h4>Owner: ${chemist.destination_id.chemistName}</h4>
+                                                <h4>Address : ${chemist.destination_id.address}</h4>
+                                                <h4>Distance : ${chemist.distance}</h4>
+                                                <h4>Contact : ${chemist.destination_id.contactNumber}</h4>
+                                            <div class="price-container" style="margin-top:20px;">
+                                                <button class="card-btn" id="${chemist.destination_id.chemistId}">Order Medicine</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            container.innerHTML += chemistCard;
+                        });          
+                }
+                
+                
+
+
+            }catch(error){
+                showPopup('Error', error.message, 'error');
+            }
+        }
+
+        function orderMedicine(chemistId){
+            window.location.href = `/order-medicine/${chemistId}`;
+           
+        /*   
+            const resultsContainer = document.getElementById('order-medicine')
+            resultsContainer.innerHTML = '';
+            const container = document.getElementById('order-medicine');
+
+            const cartHTML = `
+                <h2>Add Medicines</h2>
+                <div class="input-group">
+                    <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
+                    <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
+                </div>
+                <div class="default-wrapper">
+                    <div class="data-container">
+                        <div class="data-container-wrapper">
+                            <div class="name-container">
+                                <h1>Lanoxin</h1>
+                            </div>
+                            <div class="company-name-container">
+                                    By Unison
+                            </div>
+                            <div class="price-container">
+                                <span style="margin-top : 10px;"">₹100.45</span>
+                                <div class="btn-group">
+                                    <button class="card-btn" id="1" style="margin-left: 682px;">Add to Cart</button>
+                                </div>  
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML += cartHTML;
+        */
+        }
+
+        async function allOrders(){
+            const resultsContainer = document.getElementById('order-list')
+            resultsContainer.innerHTML = '';
+            const container = document.getElementById('order-list');
+
+            try{
+                const response = await fetch('/get-orders?userType=doctor&status=all')                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; margin-top: 20px;">No orders found.</p>';
+                    return;
+                }
+
+                let counter = 1
+                let statusText = ''
+
+                data.forEach(order => {
+                    if(order.status === 'pending'){
+                        statusText = 'Pending'
+                    }
+                    else if(order.status === 'delivered'){
+                        statusText = 'Delivered'
+                    }
+                    else if(order.status === 'not-delivered'){
+                        statusText = 'Not Delivered'
+                    }
+                    const orderCard = `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <h4>Order #${counter}</h4>
+                                <p>Shopname: ${order.shopname}</p>
+                                <p>Delivery Address: ${order.address}</p>
+                                <p>Bill Amount: ₹${order.billAmount}</p>
+                                <p>Order ID : ${order.orderId}</p>
+                                <p>Order Date: ${order.orderDate}</p>
+                            </div>
+                            <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                        </div>
+                    `;
+                    container.innerHTML += orderCard;
+                    counter++;
+                });
+
+            } catch (error) {
+                showPopup('Error', error.message, 'error');
+            }
+        }
+
+        async function specificOrders(status){
+            let statusText = ''
+            let messageText = ''
+            if (status === "pending"){
+                statusText = "Pending"
+                messageText = "No pending orders found."
+            }            
+            else if (status === "not-delivered"){
+                statusText = "Not Delivered"
+                messageText = "No undelivered orders found."
+            }
+            else if (status === "delivered"){
+                statusText = "Delivered"
+                messageText = "No delivered orders found."
+            }
+            const resultsContainer = document.getElementById('order-list')
+            resultsContainer.innerHTML = '';
+            const container = document.getElementById('order-list');
+
+            try{
+                const response = await fetch(`/get-orders?userType=doctor&status=${status}`)                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    container.innerHTML = `<p style="text-align: center; margin-top: 20px;">${messageText}</p>`;
+                    return;
+                }
+
+                let counter = 1
+                data.forEach(order => {
+                    const orderCard = `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <h4>Order #${counter}</h4>
+                                <p>Shopname: ${order.shopname}</p>
+                                <p>Delivery Address: ${order.address}</p>
+                                <p>Bill Amount: ₹${order.billAmount}</p>
+                                <p>Order ID : ${order.orderId}</p>
+                                <p>Order Date: ${order.orderDate}</p>
+                            </div>
+                            <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                        </div>
+                    `;
+                    container.innerHTML += orderCard;
+                    counter++;
+                });
+
+            } catch (error) {
+                showPopup('Error', error.message, 'error');
+            }
+        }
+
     </script>
 {% endblock %}

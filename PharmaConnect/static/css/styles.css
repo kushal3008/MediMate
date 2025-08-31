@@ -567,20 +567,66 @@ input:valid + label {
     text-align: center;
 }
 
-.status-completed{
+.status-delivered{
     background: #d4edda;
     color: #155724;
     text-align: center;
+    border: white;
 }
 
-.status-request-pending {
+.status-cancelled{
     background: rgba(255, 99, 132, 0.5);
-    color: #c93d3d;
-
+    color: #a74242;
+    border: white;
 }
 .status-not-delivered {
     background: #fff3cd;
     color: #856404;
+    border: white;
+}
+
+.status-all {
+    background: rgba(91, 117, 217, 0.5);
+    color: #121377;
+    border: white;
+}
+
+.status-pending {
+    background: lightgray;
+    color: #585858;
+    border: white;
+}
+
+.status-cancelled:active,
+.status-delivered:active,
+.status-pending:active,
+.status-not-delivered:active,
+.status-all:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-view-delivered{
+    background: #d4edda;
+    color: #155724;
+    text-align: center;
+    border: white;
+}
+
+.status-view-cancelled {
+    background: rgba(255, 99, 132, 0.5);
+    color: #c93d3d;
+    border: white;
+}
+.status-view-not-delivered {
+    background: #fff3cd;
+    color: #856404;
+    border: white;
+}
+.status-view-pending {
+    background: lightgray;
+    color: #585858;
+    border: white;
 }
 
 .orders-list {
@@ -590,8 +636,8 @@ input:valid + label {
 
 .order-item {
     padding: 15px;
-    border-bottom: 1px solid var(--color-3);
     display: flex;
+    border-bottom: 1px solid var(--color-3);
     justify-content: space-between;
     align-items: center;
 }
@@ -611,3 +657,4 @@ input:valid + label {
         height: 200px;
     }
 } 
+

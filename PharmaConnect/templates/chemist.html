@@ -516,16 +516,6 @@
                 font-weight: 500;
             }
 
-            .status-pending {
-                background: #fff3cd;
-                color: #856404;
-            }
-
-            .status-completed {
-                background: #d4edda;
-                color: #155724;
-            }
-
             .chart-container {
                 position: relative;
                 height: 300px;
@@ -748,13 +738,7 @@
                         <div class="form-group center-label">
                             <form name="billing-system" id="billing-system-form" class="billing-system-form" method="post" action="{{ url_for('generateBill')}}">
                             <input type="text" id="search-drug" list="available-medicines" placeholder="Search medicines..." required>
-                            <datalist id="available-medicines">
-                                {% if medicineList %}
-                                    {% for medicine in medicineList %}
-                                        <option value="{{ medicine.medicineName }}"></option>
-                                    {% endfor %}
-                                {% endif %}
-                            </datalist>
+                            <datalist id="available-medicines"></datalist>
                         </div>
                         <div class="form-group center-label quantity-group">
                             <button type="button" class="quantity-btn" onclick="decrementQuantity()">−</button>
@@ -791,32 +775,15 @@
 
             <section id="doctor-order" class="section register-drug-section" style="min-height: 615px;;">
                 <h2>Doctor Orders</h2>
-                <span class="order-status status-request-pending">Pending</span>
-                <span class="order-status status-not-delivered">Not Delivered</span>
-                <span class="order-status status-completed">Completed</span>
-                <div class="order-list">
-                    <div class="order-item">
-                        <div class="order-info">
-                            <h4>Order #1</h4>
-                            <p>Dr. Kushal Prajapati</p>
-                            <p>Address: C302 Ratnadeep Avenue</p>
-                            <p>Medicines: Dolo 650,Amoxicillin 250mg</p>
-                            <p>Bill Amount: ₹1000</p>
-                            <p>Date: 2024-08-25</p>
-                        </div>
-                        <span class="order-status status-pending">Pending</span>
-                    </div>
-                    <div class="order-item">
-                        <div class="order-info">
-                            <h4>Order #1</h4>
-                            <p>Dr. Kushal Prajapati</p>
-                            <p>Address: C302 Ratnadeep Avenue</p>
-                            <p>Medicines: Dolo 650,Amoxicillin 250mg</p>
-                            <p>Bill Amount: ₹1000</p>
-                            <p>Date: 2024-08-25</p>
-                        </div>
-                        <span class="order-status status-pending">Pending</span>
-                    </div>
+                <div>
+                    <button class="order-status status-all" onclick="fetchOrders()">All</button>
+                    <button class="order-status status-cancelled" onclick="fetchSpecificOrders('cancelled')" >Cancelled</button>
+                    <button class="order-status status-pending" onclick="fetchSpecificOrders('pending')" >Pending</button>
+                    <button class="order-status status-not-delivered" onclick="fetchSpecificOrders('not-delivered')" >Not Delivered</button>
+                    <button class="order-status status-delivered" onclick="fetchSpecificOrders('delivered')" >Delivered</button>
+                </div>
+                <div class="order-list" id="order-list">
+                    <!-- Order items will be populated by JavaScript -->
                 </div>
             </section>
 
@@ -916,9 +883,6 @@
                     </div>
                     <button type="submit" class="submit-btn" id="register-drug-btn">Register Medicine</button>
                 </form>
-                <div id="register-drug-success" class="success-message" style="display: none;">
-                    Medicine registered successfully!
-                </div>
             </section>
             <section id="profile" class="section">
                 <h2>Chemist Profile</h2>
@@ -1009,7 +973,12 @@
                 // If the Out of Stock section is shown, render its data
                 if (sectionId === 'out-of-stock') {
                     fetchAndRenderOutOfStock();
+                }   
+
+                if(sectionId === 'doctor-order'){
+                    fetchOrders();
                 }
+
             }
 
             // On page load, show the section from the anchor and check for flash messages
@@ -1088,12 +1057,11 @@
             // Store for registered drugs and company profile
             let registeredDrugs = [];
             let cart = [];
-            let companyProfile = null;
 
             // Function to fetch medicines data from your Flask API
             async function fetchMedicines() {
                 try {
-                    const response = await fetch('/search-medicine'); // Make GET request to your API endpoint
+                    const response = await fetch('/search-medicine?user_type=chemist'); // Make GET request to your API endpoint
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -1158,7 +1126,7 @@
                     };
                     cart.push(cartItem);
                 }
-
+                console.log(cart);
                 updateCartDisplay();
                 clearForm();
             }
@@ -1232,42 +1200,42 @@
             const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
 
                 function showPopup(title, message, type = 'info', buttons = []) {
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                modalContent.classList.remove('success', 'error', 'info', 'loading');
-                modalContent.classList.add(type);
-                modalFooter.innerHTML = '';
-            
-                if (buttons.length > 0) {
-                    buttons.forEach(btnConfig => {
+                    modalTitle.textContent = title;
+                    modalMessage.textContent = message;
+                    modalContent.classList.remove('success', 'error', 'info', 'loading');
+                    modalContent.classList.add(type);
+                    modalFooter.innerHTML = '';
+                
+                    if (buttons.length > 0) {
+                        buttons.forEach(btnConfig => {
+                            const buttonElement = document.createElement('button');
+                            buttonElement.textContent = btnConfig.text;
+                            buttonElement.className = btnConfig.className;
+                            buttonElement.setAttribute('onclick', btnConfig.onclick);
+                            modalFooter.appendChild(buttonElement);
+                        });
+                    } else {
                         const buttonElement = document.createElement('button');
-                        buttonElement.textContent = btnConfig.text;
-                        buttonElement.className = btnConfig.className;
-                        buttonElement.setAttribute('onclick', btnConfig.onclick);
+                        buttonElement.textContent = 'OK';
+                        buttonElement.className = 'card-btn';
+                        buttonElement.setAttribute('onclick', 'hidePopup()');
                         modalFooter.appendChild(buttonElement);
-                    });
-                } else {
-                    const buttonElement = document.createElement('button');
-                    buttonElement.textContent = 'OK';
-                    buttonElement.className = 'card-btn';
-                    buttonElement.setAttribute('onclick', 'hidePopup()');
-                    modalFooter.appendChild(buttonElement);
+                    }
+                
+                    modal.style.display = 'flex';
                 }
-            
-                modal.style.display = 'flex';
-            }
 
-            function showInfoPopup(title, message, type = 'info') {
-                const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
-                showPopup(title, message, type, buttons);
-            }
-            
-            /**
-            * Hides the custom popup.
-            */
-            function hidePopup() {
-                modal.style.display = 'none';
-            }
+                function showInfoPopup(title, message, type = 'info') {
+                    const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
+                    showPopup(title, message, type, buttons);
+                }
+                
+                /**
+                * Hides the custom popup.
+                */
+                function hidePopup() {
+                    modal.style.display = 'none';
+                }
 
             // --- Expired Medicines Section Logic ---
             async function fetchExpiredMedicines() {
@@ -1505,42 +1473,34 @@
                 loadDoctorOrders();
             }
 
-            function loadDoctorOrders() {
+            async function loadDoctorOrders() {
                 // Sample doctor orders data - replace with actual API call
-                const orders = [
-                    {
-                        id: 1,
-                        doctor: 'Dr. Sharma',
-                        patient: 'Rahul Kumar',
-                        medicines: ['Paracetamol 500mg', 'Amoxicillin 250mg'],
-                        date: '2024-03-15',
-                        status: 'pending'
-                    },
-                    {
-                        id: 2,
-                        doctor: 'Dr. Patel',
-                        patient: 'Priya Singh',
-                        medicines: ['Ibuprofen 400mg', 'Omeprazole 20mg'],
-                        date: '2024-03-14',
-                        status: 'completed'
+                let counter = 1;
+                try{
+                    const response = await fetch('/get-orders?userType=chemist&status=pending');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                ];
-
-                const ordersList = document.getElementById('doctor-orders-list');
-                ordersList.innerHTML = orders.map(order => `
-                    <div class="order-item">
-                        <div class="order-info">
-                            <h4>Order #${order.id}</h4>
-                            <p>Doctor: ${order.doctor}</p>
-                            <p>Patient: ${order.patient}</p>
-                            <p>Medicines: ${order.medicines.join(', ')}</p>
-                            <p>Date: ${order.date}</p>
+                    const data = await response.json();
+                    const orders = data.slice(0,2);
+                    const ordersList = document.getElementById('doctor-orders-list');
+                    ordersList.innerHTML = orders.map(order => `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <h4>Order #${counter}</h4>
+                                <p>Doctor: Dr. ${order.doctorName}</p>
+                                <p>Address: ${order.address}</p>
+                                <p>Bill Amount: ₹${order.billAmount}</p>
+                                <p>Order ID: ${order.orderId}</p>
+                                <p>Order Date: ${order.orderDate}</p>
+                            </div>
+                            <span class="order-status status-view-pending">Pending</span>
                         </div>
-                        <span class="order-status status-${order.status}">
-                            ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
-                    </div>
-                `).join('');
+                    `)
+                }catch(error){
+                    console.error("Error loading doctor orders:", error);
+                    ordersList.innerHTML = `<p style="color: red;">Failed to load doctor orders. ${error.message}</p>`;
+                }           
             }
 
             // Initialize dashboard when the section is shown
@@ -1580,7 +1540,7 @@
                 }
 
                 try {
-                    const response = await fetch('/stock-data/' + searchInput); 
+                    const response = await fetch(`/search-bar/${searchInput}?section=stock-management`); 
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -1736,6 +1696,118 @@
                     hidePopup()
                 }catch(error){
                     showPopup('Error', `An error occurred: ${error.message}`, 'error');
+                }
+            }
+
+            async function fetchOrders(){
+                const resultsContainer = document.getElementById('order-list')
+                resultsContainer.innerHTML = '';
+                const container = document.getElementById('order-list');
+
+                try{
+                    const response = await fetch('/get-orders?userType=chemist&status=all')                
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    if (data.length === 0) {
+                        container.innerHTML = '<p style="text-align: center; margin-top: 20px;">No orders found.</p>';
+                        return;
+                    }
+
+                    let counter = 1
+                    let statusText = ''
+
+                    data.forEach(order => {
+                        if(order.status === 'pending'){
+                            statusText = 'Pending'
+                        }
+                        else if(order.status === 'delivered'){
+                            statusText = 'Delivered'
+                        }
+                        else if(order.status === 'not-delivered'){
+                            statusText = 'Not Delivered'
+                        }
+                        const orderCard = `
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <h4>Order #${counter}</h4>
+                                    <p>Name: Dr. ${order.doctorName}</p>
+                                    <p>Delivery Address: ${order.address}</p>
+                                    <p>Bill Amount: ₹${order.billAmount}</p>
+                                    <p>Order ID: ${order.orderId}</p>
+                                    <p>Order Date: ${order.orderDate}</p>
+                                </div>
+                                <div style="display:grid; gap: 68px;">
+                                    <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                                    <div style="align-self: end;"> 
+                                        <button class="order-status status-all" >View Order</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += orderCard;
+                        counter++;
+                    });
+
+                } catch (error) {
+                    showPopup('Error', error.message, 'error');
+                }
+            }
+
+            async function fetchSpecificOrders(status){
+                let statusText = ''
+                let messageText = ''
+                if (status === "pending"){
+                    statusText = "Pending"
+                    messageText = "No pending orders found."
+                }            
+                else if (status === "not-delivered"){
+                    statusText = "Not Delivered"
+                    messageText = "No undelivered orders found."
+                }
+                else if (status === "delivered"){
+                    statusText = "Delivered"
+                    messageText = "No delivered orders found."
+                }
+                const resultsContainer = document.getElementById('order-list')
+                resultsContainer.innerHTML = '';
+                const container = document.getElementById('order-list');
+
+                try{
+                    const response = await fetch(`/get-orders?userType=chemist&status=${status}`)                
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    if (data.length === 0) {
+                        container.innerHTML = `<p style="text-align: center; margin-top: 20px;">${messageText}</p>`;
+                        return;
+                    }
+
+                    let counter = 1
+                    data.forEach(order => {
+                        const orderCard = `
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <h4>Order #${counter}</h4>
+                                    <p>Name: Dr. ${order.doctorName}</p>
+                                    <p>Delivery Address: ${order.address}</p>
+                                    <p>Bill Amount: ₹${order.billAmount}</p>
+                                    <p>Order ID: ${order.orderId}</p>
+                                    <p>Order Date: ${order.orderDate}</p>
+                                </div>
+                                <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                            </div>
+                        `;
+                        container.innerHTML += orderCard;
+                        counter++;
+                    });
+
+                } catch (error) {
+                    showPopup('Error', error.message, 'error');
                 }
             }
 
