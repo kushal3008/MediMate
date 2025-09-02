@@ -779,7 +779,6 @@
                     <button class="order-status status-all" onclick="fetchOrders()">All</button>
                     <button class="order-status status-cancelled" onclick="fetchSpecificOrders('cancelled')" >Cancelled</button>
                     <button class="order-status status-pending" onclick="fetchSpecificOrders('pending')" >Pending</button>
-                    <button class="order-status status-not-delivered" onclick="fetchSpecificOrders('not-delivered')" >Not Delivered</button>
                     <button class="order-status status-delivered" onclick="fetchSpecificOrders('delivered')" >Delivered</button>
                 </div>
                 <div class="order-list" id="order-list">
@@ -1477,14 +1476,14 @@
                 // Sample doctor orders data - replace with actual API call
                 let counter = 1;
                 try{
-                    const response = await fetch('/get-orders?userType=chemist&status=pending');
+                    const response = await fetch('/get-orders?userType=chemist&status=all');
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
                     const orders = data.slice(0,2);
                     const ordersList = document.getElementById('doctor-orders-list');
-                    ordersList.innerHTML = orders.map(order => `
+                    ordersList.innerHTML = orders.map(order =>`
                         <div class="order-item">
                             <div class="order-info">
                                 <h4>Order #${counter}</h4>
@@ -1494,7 +1493,7 @@
                                 <p>Order ID: ${order.orderId}</p>
                                 <p>Order Date: ${order.orderDate}</p>
                             </div>
-                            <span class="order-status status-view-pending">Pending</span>
+                            <span class="order-status status-view-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
                         </div>
                     `)
                 }catch(error){
@@ -1742,7 +1741,7 @@
                                 <div style="display:grid; gap: 68px;">
                                     <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
                                     <div style="align-self: end;"> 
-                                        <button class="order-status status-all" >View Order</button>
+                                        <button class="order-status status-all" onclick="viewOrders(${order.orderId},${counter})">View Order</button>
                                     </div>
                                 </div>
                             </div>
@@ -1763,14 +1762,15 @@
                     statusText = "Pending"
                     messageText = "No pending orders found."
                 }            
-                else if (status === "not-delivered"){
-                    statusText = "Not Delivered"
-                    messageText = "No undelivered orders found."
-                }
                 else if (status === "delivered"){
                     statusText = "Delivered"
                     messageText = "No delivered orders found."
                 }
+                else if (status === "cancelled"){
+                    statusText = "Cancelled"
+                    messageText = "No cancelled orders found."
+                }
+
                 const resultsContainer = document.getElementById('order-list')
                 resultsContainer.innerHTML = '';
                 const container = document.getElementById('order-list');
@@ -1778,7 +1778,7 @@
                 try{
                     const response = await fetch(`/get-orders?userType=chemist&status=${status}`)                
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        showPopup('Error', response.status, 'error');
                     }
                     const data = await response.json();
 
@@ -1787,28 +1787,41 @@
                         return;
                     }
 
-                    let counter = 1
-                    data.forEach(order => {
-                        const orderCard = `
-                            <div class="order-item">
-                                <div class="order-info">
-                                    <h4>Order #${counter}</h4>
-                                    <p>Name: Dr. ${order.doctorName}</p>
-                                    <p>Delivery Address: ${order.address}</p>
-                                    <p>Bill Amount: ₹${order.billAmount}</p>
-                                    <p>Order ID: ${order.orderId}</p>
-                                    <p>Order Date: ${order.orderDate}</p>
+                    if (data.message){
+                        showPopup('Error', data.message, 'error');
+                    }else{
+                        let counter = 1
+                        data.forEach(order => {
+                            const orderCard = `
+                                <div class="order-item">
+                                    <div class="order-info">
+                                        <h4>Order #${counter}</h4>
+                                        <p>Name: Dr. ${order.doctorName}</p>
+                                        <p>Delivery Address: ${order.address}</p>
+                                        <p>Bill Amount: ₹${order.billAmount}</p>
+                                        <p>Order ID: ${order.orderId}</p>
+                                        <p>Order Date: ${order.orderDate}</p>
+                                    </div>
+                                    <div style="display:grid; gap: 68px;">
+                                        <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                                        <div style="align-self: end;"> 
+                                            <button class="order-status status-all" onclick="viewOrders(${order.orderId},${counter})">View Order</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
-                            </div>
-                        `;
-                        container.innerHTML += orderCard;
-                        counter++;
-                    });
+                            `;
+                            container.innerHTML += orderCard;
+                            counter++;
+                        });
+                    }
 
                 } catch (error) {
                     showPopup('Error', error.message, 'error');
                 }
+            }
+
+            function viewOrders(orderId,counter){
+                window.location.href = `/view-order/${parseInt(orderId)}?counter=${counter}&userType=chemist`
             }
 
         </script>

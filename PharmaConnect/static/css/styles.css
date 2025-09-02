@@ -579,7 +579,7 @@ input:valid + label {
     color: #a74242;
     border: white;
 }
-.status-not-delivered {
+.status-pending {
     background: #fff3cd;
     color: #856404;
     border: white;
@@ -591,16 +591,10 @@ input:valid + label {
     border: white;
 }
 
-.status-pending {
-    background: lightgray;
-    color: #585858;
-    border: white;
-}
 
 .status-cancelled:active,
 .status-delivered:active,
 .status-pending:active,
-.status-not-delivered:active,
 .status-all:active {
   transform: translateY(2px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -618,16 +612,12 @@ input:valid + label {
     color: #c93d3d;
     border: white;
 }
-.status-view-not-delivered {
+.status-view-pending {
     background: #fff3cd;
     color: #856404;
     border: white;
 }
-.status-view-pending {
-    background: lightgray;
-    color: #585858;
-    border: white;
-}
+
 
 .orders-list {
     max-height: 300px;

@@ -858,7 +858,7 @@ def register_routes(app,db,bcrypt):
                     data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
                 return jsonify(data)
             
-            elif status == "pending" or status == "delivered" or status == "not-delivered":
+            elif status == "pending" or status == "delivered" or status == "cancelled":
                 orders = Orders.query.filter_by(doctorId=current_user.doctorId,status=status).all()
                 data = []
                 for i in orders:
@@ -866,7 +866,7 @@ def register_routes(app,db,bcrypt):
                     doctor = Doctor.query.filter_by(doctorId=current_user.doctorId).first()
                     data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
                 return jsonify(data)
-            
+                
             else:
                 return jsonify({"message":"Invalid status"}),404
         elif userType == "chemist":
@@ -878,12 +878,101 @@ def register_routes(app,db,bcrypt):
                     data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
                 return jsonify(data)
             
-            elif status == "pending" or status == "delivered" or status == "not-delivered":
+            elif status == "pending" or status == "delivered" or status == "cancelled":
                 orders = Orders.query.filter_by(chemistId=current_user.chemistId,status=status).all()
                 data = []
                 for i in orders:
                     doctor = Doctor.query.filter_by(doctorId=i.doctorId).first()
                     data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
                 return jsonify(data)
-            
-                    
+            else:
+                return jsonify({"message":"Invalid status"}),404
+        else:
+            return jsonify({"message":"Invalid user type"}),404
+        
+    @app.route('/view-order/<int:orderId>')
+    @login_required
+    def view_orders(orderId):
+        userType = request.args.get('userType')
+        counter = int(request.args.get('counter'))
+        if userType == "chemist":
+            return render_template('view_order.html',orderId=orderId,counter=counter)
+        elif userType == "doctor":
+            return render_template('doctor_view_order.html',orderId=orderId,counter=counter)
+        else:
+            return jsonify({"message":"Invalid user type"}),404
+    
+    @app.route('/get-order-details/<int:orderId>')
+    @login_required
+    def get_order_details(orderId):
+        meds = OrderMedicine.query.filter_by(orderId=orderId).all()
+        order = Orders.query.filter_by(orderId=orderId).first()
+        doctor = Doctor.query.filter_by(doctorId=order.doctorId).first()
+        orderDetails = {"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":order.billAmount,"status":order.status,"orderDate":str(order.orderDate)}
+        medData = []
+        for i in meds:
+            medicines = Medicine.query.filter_by(medicineId=i.medicineId).first()
+            if medicines.stock >= i.quantity:
+                stockStatus = "Available"
+            else:
+                stockStatus = "Out of Stock"
+            medData.append({"medicineId":i.medicineId,"medicineName":i.medicineName,"quantity":i.quantity,"mrp":i.pricePerUnit,"totalPrice":i.totalPrice,"stockStatus":stockStatus})
+        data = {"orderDetails":orderDetails,"medicineDetails":medData}
+        return jsonify(data)
+    
+    @app.route('/order/<int:orderId>')
+    @login_required
+    def order(orderId):
+        status = request.args.get('status')
+        if status == "accept":
+            order = Orders.query.filter_by(orderId=orderId).first()
+            chemist = Chemist.query.filter_by(chemistId=order.chemistId).first()
+            doctor = Doctor.query.filter_by(doctorId=order.doctorId).first()
+            medicineList = OrderMedicine.query.filter_by(orderId=orderId).all()
+
+            for medicine in medicineList:
+                medicine.pricePerUnit = float(medicine.pricePerUnit)
+                medicine.totalPrice = float(medicine.totalPrice)
+
+            renderedHtml = render_template('doctor_bill_template.html',
+                                            img_string = BASE_64_STRING,
+                                            orderId = orderId,
+                                            orderDate = str(order.orderDate),
+                                            chemist = chemist,
+                                            doctor = doctor,
+                                            billAmount = float(order.billAmount),
+                                            medicineList = medicineList)
+            try:
+                # IMPORTANT: You must provide the correct path to the wkhtmltopdf executable.
+                # 1. Find where 'wkhtmltopdf.exe' is located on your system.
+                # 2. Replace the path below with your actual path.
+                # 3. Use a raw string (r'...') to avoid issues with backslashes.
+                path_wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+                config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+                
+                # Generate the PDF using the configuration
+                pdf = pdfkit.from_string(renderedHtml, False, configuration=config)
+
+                if doctor and doctor.doctorEmail:
+                    send_email_with_pdf(pdf, doctor.doctorEmail, orderId)
+
+                flash('Bill generated and sent to doctor successfully!', 'success')
+                if order:
+                    order.status = "delivered"
+                    db.session.commit()
+
+                return redirect(url_for('chemist')+'#doctor-order')
+
+            except IOError as e:
+                # This will catch the "No wkhtmltopdf executable found" error
+                print(f"Error generating PDF: {e}. Please ensure wkhtmltopdf is installed and the path in routes.py is correct.", 'error')
+                flash('Error generating PDF.', 'error')
+
+    @app.route('/update-database')
+    def update_database():
+        order = Orders.query.filter_by(orderId = 1).first()
+        if order:
+            order.status = "delivered"
+            db.session.commit()
+        return "DOne"
+

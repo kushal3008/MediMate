@@ -639,8 +639,8 @@
             <h2>My Orders</h2>
             <div>
                 <button class="order-status status-all" onclick="allOrders()">All</button>
+                <button class="order-status status-cancelled" onclick="specificOrders('cancelled')">Cancelled</button>
                 <button class="order-status status-pending" onclick="specificOrders('pending')">Pending</button>
-                <button class="order-status status-not-delivered" onclick="specificOrders('not-delivered')">Not Delivered</button>
                 <button class="order-status status-delivered" onclick="specificOrders('delivered')">Delivered</button>
             </div>
             <div id="order-list" class="order-list">
@@ -1054,20 +1054,25 @@
                     else if(order.status === 'delivered'){
                         statusText = 'Delivered'
                     }
-                    else if(order.status === 'not-delivered'){
-                        statusText = 'Not Delivered'
+                    else if(order.status === 'cancelled'){
+                        statusText = 'Cancelled'
                     }
                     const orderCard = `
                         <div class="order-item">
                             <div class="order-info">
                                 <h4>Order #${counter}</h4>
-                                <p>Shopname: ${order.shopname}</p>
+                                <p>Name: Dr. ${order.doctorName}</p>
                                 <p>Delivery Address: ${order.address}</p>
                                 <p>Bill Amount: ₹${order.billAmount}</p>
-                                <p>Order ID : ${order.orderId}</p>
+                                <p>Order ID: ${order.orderId}</p>
                                 <p>Order Date: ${order.orderDate}</p>
                             </div>
-                            <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                            <div style="display:grid; gap: 68px;">
+                                <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                                <div style="align-self: end;"> 
+                                    <button class="order-status status-all" onclick="viewOrder(${order.orderId},${counter})">View Order</button>
+                                </div>
+                            </div>
                         </div>
                     `;
                     container.innerHTML += orderCard;
@@ -1086,9 +1091,9 @@
                 statusText = "Pending"
                 messageText = "No pending orders found."
             }            
-            else if (status === "not-delivered"){
-                statusText = "Not Delivered"
-                messageText = "No undelivered orders found."
+            else if (status === "cancelled"){
+                statusText = "Cancelled"
+                messageText = "No cancelled orders found."
             }
             else if (status === "delivered"){
                 statusText = "Delivered"
@@ -1110,28 +1115,42 @@
                     return;
                 }
 
-                let counter = 1
-                data.forEach(order => {
-                    const orderCard = `
-                        <div class="order-item">
-                            <div class="order-info">
-                                <h4>Order #${counter}</h4>
-                                <p>Shopname: ${order.shopname}</p>
-                                <p>Delivery Address: ${order.address}</p>
-                                <p>Bill Amount: ₹${order.billAmount}</p>
-                                <p>Order ID : ${order.orderId}</p>
-                                <p>Order Date: ${order.orderDate}</p>
+                if(data.message){
+                    showPopup('Error', data.message, 'error');
+                }else{
+                    let counter = 1
+                    data.forEach(order => {
+                        const orderCard = `
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <h4>Order #${counter}</h4>
+                                    <p>Name: Dr. ${order.doctorName}</p>
+                                    <p>Delivery Address: ${order.address}</p>
+                                    <p>Bill Amount: ₹${order.billAmount}</p>
+                                    <p>Order ID: ${order.orderId}</p>
+                                    <p>Order Date: ${order.orderDate}</p>
+                                </div>
+                                <div style="display:grid; gap: 68px;">
+                                    <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                                    <div style="align-self: end;"> 
+                                        <button class="order-status status-all" onclick="viewOrder(${order.orderId},${counter})">View Order</button>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
-                        </div>
-                    `;
-                    container.innerHTML += orderCard;
-                    counter++;
-                });
+                        `;
+                        container.innerHTML += orderCard;
+                        counter++;
+                    });
+                }
+
 
             } catch (error) {
                 showPopup('Error', error.message, 'error');
             }
+        }
+
+        function viewOrder(orderId,counter){
+            window.location.href = `/view-order/${parseInt(orderId)}?counter=${counter}&userType=doctor`
         }
 
     </script>
