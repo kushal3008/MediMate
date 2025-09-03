@@ -127,6 +127,8 @@ class Appointments(db.Model):
     appointmentDate = db.Column(db.Date,nullable=False)
     patientId = db.Column(db.Integer,nullable=False)
     appointmentTime = db.Column(db.String,nullable=False)
+    patientType = db.Column(db.String,nullable=False)
+    status = db.Column(db.String,nullable=False)
 
     def __repr__(self):
         return ""

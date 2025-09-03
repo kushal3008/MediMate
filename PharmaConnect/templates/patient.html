@@ -252,20 +252,21 @@
             <!-- Populated by JS -->
         </div>
     </section>
-    <section id="appointments" class="section">
+    <section id="appointments" class="section register-drug-section">
         <h2>Book Appointment</h2>
-        <form id="appointment-form">
-            <div class="form-group">
-                <input type="text" id="doctor-name" placeholder="Doctor Name" required>
-            </div>
-            <div class="form-group">
-                <input type="date" id="appointment-date" required>
-            </div>
-            <div class="form-group">
-                <input type="time" id="appointment-time" required>
-            </div>
-            <button type="submit" class="btn">Book Appointment</button>
-        </form>
+        <div class="form-group">
+            <input type="text" id="doctor-name" placeholder="Doctor Name..." list="available-doctors" required>
+            <datalist id="available-doctors">
+                <!-- Populated by JS -->
+            </datalist>
+        </div>
+        <div class="dropdown-container">
+            <select class="custom-select" id="appointment-type">
+                <option value="new-patient">New Patient</option>
+                <option value="follow-up">Follow-Up</option>
+            </select>
+        </div>
+        <button class="card-btn" style="margin-top: 25px;">Request Appointment</button>
         <div id="appointment-success" style="display:none; color:green; margin-top:10px;">Appointment booked successfully!</div>
     </section>
     <section id="profile" class="section">
@@ -324,26 +325,51 @@
 <script>
     function showSection(event, sectionId) {
         if (event) event.preventDefault();
-        const sections = document.querySelectorAll('.section');
-        sections.forEach(section => section.style.display = 'none');
-        const target = document.getElementById(sectionId);
-        if (target) target.style.display = 'block';
+
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Show selected section
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
+
+        // Remove 'active' class from all links
         document.querySelectorAll('.sidebar nav a').forEach(link => {
             link.classList.remove('active');
         });
+
+        // Add 'active' class to clicked link
         const activeLink = document.querySelector(`.sidebar nav a[href="#${sectionId}"]`);
         if (activeLink) activeLink.classList.add('active');
+
+        // Update the URL hash
+        if (sectionId !== 'dashboard') {
+            history.replaceState(null, null, '#' + sectionId);
+        } else {
+            history.replaceState(null, null, '#dashboard');
+        }
+        if(sectionId === 'dashboard'){
+
+        }
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
-        // Check if there's an anchor in the URL
-        const anchor = window.location.hash.substring(1); // remove the #
-        if (anchor) {
-            showSection(null, anchor);
-        } else {
-            showSection(null, 'dashboard'); // default section
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+        showSection(null, hash);
+        
+        // New logic to handle flash messages and popups
+        const flashContainer = document.getElementById('flash-messages-container');
+        const flashMessages = flashContainer.querySelectorAll('.flash-message');
+
+        if (flashMessages.length > 0) {
+            const message = flashMessages[0].textContent;
+            const category = flashMessages[0].dataset.category;
+            showPopup(category.charAt(0).toUpperCase() + category.slice(1), message, category);
         }
     });
+
 // Appointment booking success message
     const appointmentForm = document.getElementById('appointment-form');
     if (appointmentForm) {

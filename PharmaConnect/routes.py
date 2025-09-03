@@ -11,7 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 import json
-from sqlalchemy import and_
+from sqlalchemy import and_,func,union_all,Integer
 import requests
 
 def register_routes(app,db,bcrypt):
@@ -795,6 +795,35 @@ def register_routes(app,db,bcrypt):
         else:
             return {}
     
+    @app.route('/card-data')
+    @login_required
+    def cardData():
+        order = Orders.query.filter_by(chemistId=current_user.chemistId).all()
+        sales = Purchase.query.filter_by(chemistId = current_user.chemistId).all()
+        pending = Orders.query.filter(Orders.chemistId == current_user.chemistId,Orders.status == "pending").all()
+        delivered = Orders.query.filter(Orders.chemistId == current_user.chemistId,Orders.status == "delivered").all()
+        orderLen = 0
+        salesAmount = 0
+        pendingLen = 0
+        deliveredLen = 0
+        orderBillAmount = 0
+        totalSales = 0
+        for i in order:
+            orderLen += 1
+            if i.status == "delivered":
+                orderBillAmount += float(i.billAmount)
+        for i in pending:
+            pendingLen += 1
+        for i in delivered:
+            deliveredLen += 1
+        for i in sales:
+            salesAmount += float(i.billAmount)
+        totalSales = salesAmount + orderBillAmount
+        data = [{"totalOrder":orderLen,"totalSales":f"{totalSales:.2f}","pendingOrder":pendingLen,"deliveredOrder":deliveredLen}]
+        return jsonify(data)
+
+        
+    
     @app.route('/delete/<medicineId>',methods=['POST'])
     @login_required
     def deleteMedicine(medicineId):
@@ -855,7 +884,7 @@ def register_routes(app,db,bcrypt):
                 for i in orders:
                     chemist = Chemist.query.filter_by(chemistId=i.chemistId).first()
                     doctor = Doctor.query.filter_by(doctorId=current_user.doctorId).first()
-                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
+                    data.append({"orderId":i.orderId,"orderDate":str(i.orderDate),"shopname":chemist.shopname,"doctorName":doctor.doctorName,"address":doctor.address,"billAmount":i.billAmount,"status":i.status})
                 return jsonify(data)
             
             elif status == "pending" or status == "delivered" or status == "cancelled":
@@ -967,12 +996,101 @@ def register_routes(app,db,bcrypt):
                 # This will catch the "No wkhtmltopdf executable found" error
                 print(f"Error generating PDF: {e}. Please ensure wkhtmltopdf is installed and the path in routes.py is correct.", 'error')
                 flash('Error generating PDF.', 'error')
+        elif status == "decline":
+            # order = Orders.query.filter_by(orderId=orderId).first()
+            # if order:
+            #     order.status = "cancelled"
+            #     db.session.commit()
+            flash('Order declined!','success')
+            return redirect(url_for('chemist')+'#doctor-order')
+        elif status == "view-bill":
+            order = Orders.query.filter_by(orderId=orderId).first()
+            chemist = Chemist.query.filter_by(chemistId=order.chemistId).first()
+            doctor = Doctor.query.filter_by(doctorId=order.doctorId).first()
+            medicineList = OrderMedicine.query.filter_by(orderId=orderId).all()
+
+            for medicine in medicineList:
+                medicine.pricePerUnit = float(medicine.pricePerUnit)
+                medicine.totalPrice = float(medicine.totalPrice)
+
+            return render_template('doctor_bill_template.html',
+                                            img_string = BASE_64_STRING,
+                                            orderId = orderId,
+                                            orderDate = str(order.orderDate),
+                                            chemist = chemist,
+                                            doctor = doctor,
+                                            billAmount = float(order.billAmount),
+                                            medicineList = medicineList)
+    
+    @app.route('/chart-data')
+    @login_required
+    def chartData():
+        try:
+            # Query for sales data.
+            total_sales_by_day = db.session.query(
+                func.strftime('%Y-%m-%d', Sales.date).label('sales_date'),
+                func.sum(Sales.totalPrice).label('daily_total')
+            ).filter(
+                Sales.chemistId == current_user.chemistId
+            ).group_by(
+                Sales.date
+            ).order_by(
+                Sales.date
+            ).all()
+            
+            # Query for orders data. The billAmount is cast to Integer for summing.
+            total_orders_by_day = db.session.query(
+                func.strftime('%Y-%m-%d', Orders.orderDate).label('order_date'),
+                func.sum(Orders.billAmount.cast(Integer)).label('daily_total')
+            ).filter(
+                Orders.chemistId == current_user.chemistId
+            ).group_by(
+                Orders.orderDate
+            ).order_by(
+                Orders.orderDate
+            ).all()
+            
+            # Combine dates from both sales and orders queries to get a comprehensive list
+            sales_dates = {row.sales_date for row in total_sales_by_day}
+            orders_dates = {row.order_date for row in total_orders_by_day}
+            all_dates = sorted(list(sales_dates.union(orders_dates)))
+            
+            # Create dictionaries for quick lookup of daily totals
+            sales_data_map = {row.sales_date: row.daily_total for row in total_sales_by_day}
+            orders_data_map = {row.order_date: row.daily_total for row in total_orders_by_day}
+            
+            # Build a single list of daily totals by summing sales and orders for each date
+            combined_totals = []
+            for date in all_dates:
+                sales_total = sales_data_map.get(date, 0)
+                orders_total = orders_data_map.get(date, 0)
+                combined_totals.append(sales_total + orders_total)
+            
+            # Create the final data structure for a single Chart.js dataset
+            chart_data = {
+                "labels": all_dates,
+                "datasets": [
+                    {
+                        "data": combined_totals,
+                        "fill": True,
+                        "label": "Daily Total Bill Amount",
+                        "tension": 0.1,
+                        "borderColor": "#42007f",                        
+                        "backgroundColor": "rgba(66, 0, 127, 0.2)" # Light purple fill
+                    }
+                ]
+            }
+            
+            return jsonify(chart_data)
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/update-database')
     def update_database():
-        order = Orders.query.filter_by(orderId = 1).first()
-        if order:
-            order.status = "delivered"
-            db.session.commit()
+        # order = Orders.query.filter_by(orderId = 1).first()
+        # if order:
+        #     order.status = "delivered"
+        #     db.session.commit()
         return "DOne"
 

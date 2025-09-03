@@ -185,11 +185,6 @@
             color: var(--color-5);
         }
 
-        .appointment-info p {
-            margin: 5px 0;
-            color: var(--color-4);
-        }
-
         .appointment-actions {
             display: flex;
             gap: 10px;
@@ -584,18 +579,6 @@
                     </div>
                 </div>
                 <div class="dashboard-card">
-                    <h3>Patient Statistics</h3>
-                    <div class="chart-container">
-                        <canvas id="patientsChart"></canvas>
-                    </div>
-                </div>
-                <div class="dashboard-card">
-                    <h3>Recent Prescriptions</h3>
-                    <div id="recent-prescriptions" class="patient-list">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-                <div class="dashboard-card">
                     <h3>Upcoming Appointments</h3>
                     <div id="upcoming-appointments" class="appointment-list">
                         <!-- Will be populated by JavaScript -->
@@ -617,10 +600,27 @@
         </section>
 
         <!-- Appointments Section -->
-        <section id="appointments" class="section">
+        <section id="appointments" class="section register-drug-section" style="min-height: 615px;">
             <h2>Appointment Management</h2>
+            <div>
+                <button class="order-status status-all">All</button>
+                <button class="order-status status-delivered">Scheduled</button>
+                <button class="order-status status-pending">Pending</button>
+            </div>
             <div class="appointment-list">
-                <!-- Appointment cards -->
+                <div id="appointment-card" class="order-item" >
+                    <div class="order-info"s>
+                        <h3>Appointment #1</h3>
+                        <p style="margin-top:10px">Patient Name: Kushal</p>
+                        <p>Type : Follow Up</p>
+                    </div>
+                    <div style="display: grid; gap:28px">
+                        <span class="order-status status-view-pending">Pending</span>
+                        <div style="align-self: end;">
+                            <button class="order-status status-all">View Appointment</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -737,8 +737,116 @@
             {% endif %}
         {% endwith %}
     </div>
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function initializeDashboard() {
+            // Initialize appointments chart
+            const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');
+            new Chart(appointmentsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['9 AM', '10 AM', '11 AM', '12 PM', '2 PM', '3 PM', '4 PM'],
+                    datasets: [{
+                        label: 'Appointments',
+                        data: [2, 3, 1, 0, 2, 4, 1],
+                        backgroundColor: '#2196F3',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initialize patients chart
+            loadUpcomingAppointments();
+        }
+
+        function loadUpcomingAppointments() {
+            const appointments = [
+                {
+                    patient: 'Amit Patel',
+                    time: '10:00 AM',
+                    type: 'Follow-up',
+                    status: 'scheduled'
+                },
+                {
+                    patient: 'Neha Sharma',
+                    time: '11:30 AM',
+                    type: 'New Patient',
+                    status: 'scheduled'
+                }
+            ];
+
+            const appointmentsList = document.getElementById('upcoming-appointments');
+            appointmentsList.innerHTML = appointments.map(appointment => `
+                <div class="appointment-card">
+                    <div class="appointment-info">
+                        <h4>${appointment.patient}</h4>
+                        <p>Time: ${appointment.time}</p>
+                        <p>Type: ${appointment.type}</p>
+                    </div>
+                    <span class="appointment-status status-${appointment.status}">
+                        ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function loadAppointments() {
+            const appointments = [
+                {
+                    patient: 'Amit Patel',
+                    date: '2024-03-16',
+                    time: '10:00 AM',
+                    type: 'Follow-up',
+                    status: 'scheduled'
+                },
+                {
+                    patient: 'Neha Sharma',
+                    date: '2024-03-16',
+                    time: '11:30 AM',
+                    type: 'New Patient',
+                    status: 'scheduled'
+                },
+                {
+                    patient: 'Rajesh Kumar',
+                    date: '2024-03-15',
+                    time: '2:00 PM',
+                    type: 'Regular Checkup',
+                    status: 'completed'
+                }
+            ];
+
+            const appointmentsList = document.getElementById('appointments-list');
+            appointmentsList.innerHTML = appointments.map(appointment => `
+                <div class="appointment-card">
+                    <div class="appointment-info">
+                        <h4>${appointment.patient}</h4>
+                        <p>Date: ${appointment.date}</p>
+                        <p>Time: ${appointment.time}</p>
+                        <p>Type: ${appointment.type}</p>
+                    </div>
+                    <span class="appointment-status status-${appointment.status}">
+                        ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                    </span>
+                </div>
+            `).join('');
+        }
+
         function showSection(event, sectionId) {
                 if (event) event.preventDefault();
 
@@ -766,7 +874,9 @@
                 } else {
                     history.replaceState(null, null, '#dashboard');
                 }
-
+                if(sectionId === 'dashboard'){
+                    initializeDashboard()
+                }
                 if(sectionId === 'order-medicine'){
                     orderMedicineGUI()
                 }
@@ -991,40 +1101,6 @@
 
         function orderMedicine(chemistId){
             window.location.href = `/order-medicine/${chemistId}`;
-           
-        /*   
-            const resultsContainer = document.getElementById('order-medicine')
-            resultsContainer.innerHTML = '';
-            const container = document.getElementById('order-medicine');
-
-            const cartHTML = `
-                <h2>Add Medicines</h2>
-                <div class="input-group">
-                    <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
-                    <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
-                </div>
-                <div class="default-wrapper">
-                    <div class="data-container">
-                        <div class="data-container-wrapper">
-                            <div class="name-container">
-                                <h1>Lanoxin</h1>
-                            </div>
-                            <div class="company-name-container">
-                                    By Unison
-                            </div>
-                            <div class="price-container">
-                                <span style="margin-top : 10px;"">₹100.45</span>
-                                <div class="btn-group">
-                                    <button class="card-btn" id="1" style="margin-left: 682px;">Add to Cart</button>
-                                </div>  
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            container.innerHTML += cartHTML;
-        */
         }
 
         async function allOrders(){

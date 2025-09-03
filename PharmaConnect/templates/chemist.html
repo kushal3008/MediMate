@@ -709,8 +709,24 @@
         </aside>
         <main class="main-content">
             <section id="dashboard" class="section active">
+                <div>
+                    <div class="stats-grid">
+                        <div id="total-order" class="stat-card">
+                            
+                        </div>
+                        <div id="pending-order" class="stat-card">
+                            
+                        </div>
+                        <div id="completed-order" class="stat-card">
+                            
+                        </div>
+                        <div id="total-sales" class="stat-card">
+                            
+                        </div>
+                    </div>
+                </div>
                 <div class="dashboard-grid">
-                    <div class="dashboard-card doctor-orders">
+                    <div class="dashboard-card doctor-orders" >
                         <h3>Recent Doctor Orders</h3>
                         <div class="orders-list" id="doctor-orders-list">
                             <!-- Orders will be populated by JavaScript -->
@@ -773,7 +789,7 @@
                 </div>
             </section>
 
-            <section id="doctor-order" class="section register-drug-section" style="min-height: 615px;;">
+            <section id="doctor-order" class="section register-drug-section" style="min-height: 680px;;">
                 <h2>Doctor Orders</h2>
                 <div>
                     <button class="order-status status-all" onclick="fetchOrders()">All</button>
@@ -788,14 +804,15 @@
 
             <section id="sales" class="section register-drug-section" style="min-height: 615px;">
                 <h2>Sales Report</h2>
-                <div style="display: flex; gap:100px">
-                    <div class="graph-container" id="sales-graph" style="margin-left:137.5px"></div>
-                    <div class="graph-container" id="date-graph"></div>
+                <div>
+                    <button class="order-status status-all">Sales Graph</button>
+                    <button class="order-status status-all">Date Range</button>
                 </div>
-                <h2 style="margin-top: 20px;">Prediction Report</h2>
-                <div style="display: flex; gap:100px;">
-                    <div class="graph-container" id="prediction-graph" style="margin-left:137.5px"></div>
-                    <div class="graph-container" id="prediction-date-graph"></div>
+                <div style="display: flex; align-items: center; justify-content: center; gap:20px">
+                    <div class="graph-container" style="display: block;" id="sales-graph">
+                        <canvas id="salesGraph"></canvas>
+                    </div>
+                    <div class="graph-container" style="display: none;" id="date-graph"></div>
                 </div>
             </section>
 
@@ -976,6 +993,9 @@
 
                 if(sectionId === 'doctor-order'){
                     fetchOrders();
+                }
+                if(sectionId === 'sales'){
+                    salesGraph()
                 }
 
             }
@@ -1472,6 +1492,46 @@
                 loadDoctorOrders();
             }
 
+            async function cardData(){
+                try{
+                    totalOrderContainer = document.getElementById('total-order')
+                    pendingOrderContainer = document.getElementById('pending-order')
+                    completedOrderContainer = document.getElementById('completed-order')
+                    totalSalesContainer = document.getElementById('total-sales')
+                    totalOrderContainer.innerHTML = ''
+                    pendingOrderContainer.innerHTML = ''
+                    completedOrderContainer.innerHTML = ''
+                    totalSalesContainer.innerHTML = ''
+
+                    const response = await fetch('/card-data')
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json()
+                    console.log("fetched",data)
+                    
+                    
+                    totalOrderContainer.innerHTML += `
+                        <div class="stat-number">${data[0].totalOrder}</div>
+                        <div class="stat-label"><b>Total Orders</b></div>
+                    `
+                    pendingOrderContainer.innerHTML += `
+                        <div class="stat-number">${data[0].pendingOrder}</div>
+                        <div class="stat-label"><b>Pending Orders</b></div>
+                    `
+                    completedOrderContainer.innerHTML += `
+                        <div class="stat-number">${data[0].deliveredOrder}</div>
+                        <div class="stat-label"><b>Delivered Orders</b></div>
+                    `
+                    totalSalesContainer.innerHTML += `
+                        <div class="stat-number">${data[0].totalSales}</div>
+                        <div class="stat-label"><b>Total Sales</b></div>
+                    `
+                }catch(error){
+                    showPopup('Error', error.message ,'error')
+                }
+            }
+
             async function loadDoctorOrders() {
                 // Sample doctor orders data - replace with actual API call
                 let counter = 1;
@@ -1482,20 +1542,26 @@
                     }
                     const data = await response.json();
                     const orders = data.slice(0,2);
+                    console.log("done",orders)
                     const ordersList = document.getElementById('doctor-orders-list');
-                    ordersList.innerHTML = orders.map(order =>`
-                        <div class="order-item">
-                            <div class="order-info">
-                                <h4>Order #${counter}</h4>
-                                <p>Doctor: Dr. ${order.doctorName}</p>
-                                <p>Address: ${order.address}</p>
-                                <p>Bill Amount: ₹${order.billAmount}</p>
-                                <p>Order ID: ${order.orderId}</p>
-                                <p>Order Date: ${order.orderDate}</p>
+                    ordersList.innerHTML = ''
+                    orders.forEach(order=> {
+                        orderHTML = `
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <h4>Order #${counter}</h4>
+                                    <p>Doctor: Dr. ${order.doctorName}</p>
+                                    <p>Address: ${order.address}</p>
+                                    <p>Bill Amount: ₹${order.billAmount}</p>
+                                    <p>Order ID: ${order.orderId}</p>
+                                    <p>Order Date: ${order.orderDate}</p>
+                                </div>
+                                <span class="order-status status-view-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
                             </div>
-                            <span class="order-status status-view-${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
-                        </div>
-                    `)
+                        `
+                        counter++;
+                        ordersList.innerHTML += orderHTML;
+                    })
                 }catch(error){
                     console.error("Error loading doctor orders:", error);
                     ordersList.innerHTML = `<p style="color: red;">Failed to load doctor orders. ${error.message}</p>`;
@@ -1507,6 +1573,7 @@
                 const dashboardSection = document.getElementById('dashboard');
                 if (dashboardSection.classList.contains('active')) {
                     initializeDashboard();
+                    cardData();
                 }
             });
 
@@ -1725,8 +1792,8 @@
                         else if(order.status === 'delivered'){
                             statusText = 'Delivered'
                         }
-                        else if(order.status === 'not-delivered'){
-                            statusText = 'Not Delivered'
+                        else if(order.status === 'cancelled'){
+                            statusText = 'Cancelled'
                         }
                         const orderCard = `
                             <div class="order-item">
@@ -1822,6 +1889,63 @@
 
             function viewOrders(orderId,counter){
                 window.location.href = `/view-order/${parseInt(orderId)}?counter=${counter}&userType=chemist`
+            }
+
+            async function salesGraph(){
+                try{
+                    const response = await fetch('/chart-data')
+                    if(!response.ok){
+                        throw new Error(`HTTP error! status: ${response.status}`)
+                    }
+                    const salesGraphData = await response.json()
+                    console.log("Sales Graph Data",salesGraphData)
+
+                    const salesGraph = document.getElementById('salesGraph').getContext('2d');
+
+                    
+                    
+                    // Destroy existing chart if it exists
+                    if (window.stockChartInstance) {
+                        window.stockChartInstance.destroy();
+                    }
+
+                    // Chart options
+                    
+
+                    // Create and store a new chart instance
+                    window.stockChartInstance = new Chart(salesGraph, {
+                        type: 'line',
+                        data: salesGraphData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid : {
+                                        display: false,
+                                    },
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '₹' + value.toLocaleString();
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                    });
+
+                    
+                }catch(error){
+                    showPopup('Error', error.message, 'error');
+                }
             }
 
         </script>

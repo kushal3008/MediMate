@@ -691,25 +691,25 @@
                                     <!-- Will be populated by JavaScript -->
                                 </div>
                             </div>
-                            <div id="quantity-wrapper" style="width: 175px;;">
+                            <div id="quantity-wrapper" style="width: 225px;;">
                                 <h2>Quantity</h2>
                                 <div id="quantity-container" style="display:flex; gap:10px; flex-direction:column;">
                                     <!-- Will be populated by JavaScript -->
                                 </div>
                             </div>
-                            <div id="price-wrapper" style=" width:175px;";>
+                            <div id="price-wrapper" style=" width:225px;";>
                                 <h2>MRP</h2>
                                 <div id="price-container" style="display:flex; gap:10px; flex-direction:column;">
                                     <!-- Will be populated by JavaScript -->
                                 </div>
                             </div>
-                            <div id="amount-wrapper" style=" width:175px; ";>
+                            <div id="amount-wrapper" style=" width:200px; ";>
                                 <h2>Amount</h2>
                                 <div id="amount-container" style="display:flex; gap:10px; flex-direction:column;">
                                     <!-- Will be populated by JavaScript -->
                                 </div>    
                             </div>
-                            <div id="status-wrapper" style="width: 125px;";>
+                            <div id="status-wrapper" style="width: 175px;";>
                                 <h2>Status</h2>
                                 <div id="status-container" style="display:flex; gap:10px; flex-direction:column; align-items:center;">
                                     <!-- Will be populated by JavaScript -->
@@ -847,7 +847,7 @@
                 if(data.orderDetails.status === "pending"){
                     buttonContainer.innerHTML += `
                         <button class="order-status status-delivered" onclick="acceptOrder()">Accept</button>
-                        <button class="order-status status-cancelled">Decline</button>
+                        <button class="order-status status-cancelled" onclick="declineOrder()">Decline</button>
                     `
                     data.medicineDetails.forEach(medicine => {
                         nameContainer.innerHTML += `<p>${medicine.medicineName}</p>`;
@@ -862,7 +862,22 @@
                         }
                     }
                 )}
-                else if(data.orderDetails.status === "delivered" || data.orderDetails.status === "cancelled"){
+                else if(data.orderDetails.status === "cancelled"){
+                    data.medicineDetails.forEach(medicine => {
+                        nameContainer.innerHTML += `<p>${medicine.medicineName}</p>`;
+                        quantityContainer.innerHTML += `<p>${medicine.quantity}</p>`;
+                        priceContainer.innerHTML += `<p>₹${medicine.mrp}</p>`;
+                        amountContainer.innerHTML += `<p>₹${medicine.totalPrice}</p>`;
+                        if (medicine.stockStatus==="Available") {
+                            statusContainer.innerHTML += `<div class="order-status status-view-delivered" style="display:flex; justify-content:center; align-items:center; max-height:21.6px;">In Stock</div>`
+                        }
+                        else if(medicine.stockStatus==="Out of Stock"){
+                            statusContainer.innerHTML += `<div class="order-status status-view-cancelled" style="display:flex; justify-content:center; align-items:center; max-height:21.6px;">Out of Stock</div>`
+                        }
+                    }
+                )}
+                else if(data.orderDetails.status === "delivered"){
+                    buttonContainer.innerHTML += `<button class="order-status status-all" onclick="viewBill()">View Bill</button>`
                     data.medicineDetails.forEach(medicine => {
                         nameContainer.innerHTML += `<p>${medicine.medicineName}</p>`;
                         quantityContainer.innerHTML += `<p>${medicine.quantity}</p>`;
@@ -885,6 +900,14 @@
 
         function acceptOrder(){
             window.location.href = `/order/${parseInt(document.getElementById('order-id').value)}?status=accept`;
+        }
+        
+        function declineOrder(){
+            window.location.href = `/order/${parseInt(document.getElementById('order-id').value)}?status=decline`;
+        }
+        
+        function viewBill(){
+            window.location.href = `/order/${parseInt(document.getElementById('order-id').value)}?status=view-bill`;
         }
 
     </script>
