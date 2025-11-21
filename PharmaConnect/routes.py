@@ -1025,66 +1025,164 @@ def register_routes(app,db,bcrypt):
     @app.route('/chart-data')
     @login_required
     def chartData():
-        try:
-            # Query for sales data.
-            total_sales_by_day = db.session.query(
-                func.strftime('%Y-%m-%d', Sales.date).label('sales_date'),
-                func.sum(Sales.totalPrice).label('daily_total')
-            ).filter(
-                Sales.chemistId == current_user.chemistId
-            ).group_by(
-                Sales.date
-            ).order_by(
-                Sales.date
-            ).all()
-            
-            # Query for orders data. The billAmount is cast to Integer for summing.
-            total_orders_by_day = db.session.query(
-                func.strftime('%Y-%m-%d', Orders.orderDate).label('order_date'),
-                func.sum(Orders.billAmount.cast(Integer)).label('daily_total')
-            ).filter(
-                Orders.chemistId == current_user.chemistId
-            ).group_by(
-                Orders.orderDate
-            ).order_by(
-                Orders.orderDate
-            ).all()
-            
-            # Combine dates from both sales and orders queries to get a comprehensive list
-            sales_dates = {row.sales_date for row in total_sales_by_day}
-            orders_dates = {row.order_date for row in total_orders_by_day}
-            all_dates = sorted(list(sales_dates.union(orders_dates)))
-            
-            # Create dictionaries for quick lookup of daily totals
-            sales_data_map = {row.sales_date: row.daily_total for row in total_sales_by_day}
-            orders_data_map = {row.order_date: row.daily_total for row in total_orders_by_day}
-            
-            # Build a single list of daily totals by summing sales and orders for each date
-            combined_totals = []
-            for date in all_dates:
-                sales_total = sales_data_map.get(date, 0)
-                orders_total = orders_data_map.get(date, 0)
-                combined_totals.append(sales_total + orders_total)
-            
-            # Create the final data structure for a single Chart.js dataset
-            chart_data = {
-                "labels": all_dates,
-                "datasets": [
-                    {
-                        "data": combined_totals,
-                        "fill": True,
-                        "label": "Daily Total Bill Amount",
-                        "tension": 0.1,
-                        "borderColor": "#42007f",                        
-                        "backgroundColor": "rgba(66, 0, 127, 0.2)" # Light purple fill
+        graph = request.args.get('graph')
+        if graph == "sales":
+            try:
+                # Query for sales data.
+                total_sales_by_day = db.session.query(
+                    func.strftime('%Y-%m-%d', Sales.date).label('sales_date'),
+                    func.sum(Sales.totalPrice).label('daily_total')
+                ).filter(
+                    Sales.chemistId == current_user.chemistId
+                ).group_by(
+                    Sales.date
+                ).order_by(
+                    Sales.date
+                ).all()
+                
+                # Query for orders data. The billAmount is cast to Integer for summing.
+                total_orders_by_day = db.session.query(
+                    func.strftime('%Y-%m-%d', Orders.orderDate).label('order_date'),
+                    func.sum(Orders.billAmount.cast(Integer)).label('daily_total')
+                ).filter(
+                    Orders.chemistId == current_user.chemistId
+                ).group_by(
+                    Orders.orderDate
+                ).order_by(
+                    Orders.orderDate
+                ).all()
+                
+                # Combine dates from both sales and orders queries to get a comprehensive list
+                sales_dates = {row.sales_date for row in total_sales_by_day}
+                orders_dates = {row.order_date for row in total_orders_by_day}
+                all_dates = sorted(list(sales_dates.union(orders_dates)))
+                
+                # Create dictionaries for quick lookup of daily totals
+                sales_data_map = {row.sales_date: row.daily_total for row in total_sales_by_day}
+                orders_data_map = {row.order_date: row.daily_total for row in total_orders_by_day}
+                
+                # Build a single list of daily totals by summing sales and orders for each date
+                combined_totals = []
+                for date in all_dates:
+                    sales_total = sales_data_map.get(date, 0)
+                    orders_total = orders_data_map.get(date, 0)
+                    combined_totals.append(sales_total + orders_total)
+                
+                # Create the final data structure for a single Chart.js dataset
+                chart_data = {
+                    "labels": all_dates,
+                    "datasets": [
+                        {
+                            "data": combined_totals,
+                            "fill": True,
+                            "label": "Daily Total Bill Amount",
+                            "tension": 0.1,
+                            "borderColor": "#42007f",                        
+                            "backgroundColor": "rgba(66, 0, 127, 0.2)" # Light purple fill
+                        }
+                    ]
+                }
+                
+                return jsonify(chart_data)
+                
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+        elif graph == "date-range":
+            start_date = request.args.get('start')
+            end_date = request.args.get('end')
+            try:
+                # Query for total sales within the date range
+                total_sales = db.session.query(
+                    func.sum(Sales.totalPrice)
+                ).filter(
+                    Sales.chemistId == current_user.chemistId,
+                    Sales.date.between(start_date, end_date)
+                ).scalar() or 0
+
+                # Query for total orders within the date range
+                total_orders = db.session.query(
+                    func.sum(Orders.billAmount.cast(Integer))
+                ).filter(
+                    Orders.chemistId == current_user.chemistId,
+                    Orders.orderDate.between(start_date, end_date)
+                ).scalar() or 0
+
+                # Create the final data structure
+                report_data = {
+                    "total_sales_amount": total_sales,
+                    "total_orders_amount": total_orders,
+                    "date_range": {
+                        "start": start_date,
+                        "end": end_date
                     }
-                ]
-            }
-            
-            return jsonify(chart_data)
-            
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+                }
+
+                return jsonify(report_data)
+
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+        
+    @app.route('/fetch-doctor',methods=['GET','POST'])
+    @login_required
+    def fetchDoctor():
+        if request.method == "GET":
+            doctorName = request.args.get('doctorName')
+            if doctorName:
+                doctor = Doctor.query.filter(Doctor.address.isnot(None),Doctor.doctorName.ilike(f"%{doctorName}%")).all()
+                doctorList = []
+                for i in doctor:
+                    doctorList.append({'doctorId':i.doctorId,'specialization':i.specialization,'doctorName':i.doctorName,'address':i.address,'doctorEmail':i.doctorEmail,'hospitalName':i.hospitalname})
+                return jsonify(doctorList)
+            else:
+                doctor = Doctor.query.filter(Doctor.address.isnot(None)).all()
+                doctorList = []
+                for i in doctor:
+                    doctorList.append({'doctorId':i.doctorId,'specialization':i.specialization,'doctorName':i.doctorName,'address':i.address,'doctorEmail':i.doctorEmail,'hospitalName':i.hospitalname})
+                return jsonify(doctorList)
+              
+        elif request.method == "POST":
+            doctorId = request.args.get('doctorId')
+            appointmentType = request.args.get('appointmentType')
+            doctor = Doctor.query.filter_by(doctorId=doctorId).first()
+            if doctor:
+                appointments = Appointments(
+                    doctorId = doctor.doctorId,
+                    patientType = appointmentType,
+                    status = "pending",
+                    patientId = current_user.patientId
+                )
+                db.session.add(appointments)
+                db.session.commit()
+                return redirect('/patient')
+            else:
+                flash('Doctor not found','error')
+                return redirect('/patient')
+        else:
+            return flash('Invalid request method','error')
+        
+    @app.route('/fetch-appointments')
+    @login_required
+    def fetchAppointments():
+        status = request.args.get('status')
+        if status == "all":
+            appointments = Appointments.query.filter_by(doctorId=current_user.doctorId).all()
+            appointmentList = []
+            for i in appointments:
+                patient = Patient.query.filter_by(patientId=i.patientId).first()
+                appointmentList.append({'appointmentId':i.appointmentId,'patientName':patient.patientName,'appointmentType':i.patientType,'status':i.status})
+            return jsonify(appointmentList)
+        elif status == "pending" or status == "scheduled":
+            appointments = Appointments.query.filter_by(doctorId=current_user.doctorId,status=status).all()
+            appointmentList = []
+            for i in appointments:
+                patient = Patient.query.filter_by(patientId=i.patientId).first()
+                appointmentList.append({'appointmentId':i.appointmentId,'patientName':patient.patientName,'appointmentType':i.patientType,'status':i.status})
+            return jsonify(appointmentList)
+        
+    @app.route('/view-appointment/<int:appointmentId>')
+    @login_required
+    def viewAppointment(appointmentId):
+        return render_template('view_appointment.html',appointmentId=appointmentId)
 
     @app.route('/update-database')
     def update_database():

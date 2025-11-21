@@ -255,19 +255,12 @@
     <section id="appointments" class="section register-drug-section">
         <h2>Book Appointment</h2>
         <div class="form-group">
-            <input type="text" id="doctor-name" placeholder="Doctor Name..." list="available-doctors" required>
-            <datalist id="available-doctors">
-                <!-- Populated by JS -->
-            </datalist>
+            <input type="text" id="doctor-name" placeholder="Doctor Name..." style="width: 90%;" required>
+            <button class="card-btn" onclick="doctorSearchBar()">Search</button>
         </div>
-        <div class="dropdown-container">
-            <select class="custom-select" id="appointment-type">
-                <option value="new-patient">New Patient</option>
-                <option value="follow-up">Follow-Up</option>
-            </select>
+        <div id="doctor-list">
+            <!-- Populated by JS -->
         </div>
-        <button class="card-btn" style="margin-top: 25px;">Request Appointment</button>
-        <div id="appointment-success" style="display:none; color:green; margin-top:10px;">Appointment booked successfully!</div>
     </section>
     <section id="profile" class="section">
         <h2>Patient Profile</h2>
@@ -320,9 +313,80 @@
             <button type="submit" class="submit-btn" id="update-profile-btn" disabled>Update Profile</button>
         </form>
     </section>
+    <!-- New Modal/Popup Structure -->
+        <div id="my-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title"></h2>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message"></p>
+                </div>
+                <div class="modal-footer">
+                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden flash messages container -->
+        <div id="flash-messages-container" style="display: none;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message" data-category="{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
 </main>
+
 <!-- Chatbot UI (floating) -->
 <script>
+
+    const modal = document.getElementById('my-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
+    const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
+
+    function showPopup(title, message, type = 'info', buttons = []) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalContent.classList.remove('success', 'error', 'info', 'loading');
+        modalContent.classList.add(type);
+        modalFooter.innerHTML = '';
+    
+        if (buttons.length > 0) {
+            buttons.forEach(btnConfig => {
+                const buttonElement = document.createElement('button');
+                buttonElement.textContent = btnConfig.text;
+                buttonElement.className = btnConfig.className;
+                buttonElement.setAttribute('onclick', btnConfig.onclick);
+                modalFooter.appendChild(buttonElement);
+            });
+        } else {
+            const buttonElement = document.createElement('button');
+            buttonElement.textContent = 'OK';
+            buttonElement.className = 'card-btn';
+            buttonElement.setAttribute('onclick', 'hidePopup()');
+            modalFooter.appendChild(buttonElement);
+        }
+    
+        modal.style.display = 'flex';
+    }
+
+    function showInfoPopup(title, message, type = 'info') {
+        const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
+        showPopup(title, message, type, buttons);
+    }
+    
+    /**
+    * Hides the custom popup.
+    */
+    function hidePopup() {
+        modal.style.display = 'none';
+    }
+
     function showSection(event, sectionId) {
         if (event) event.preventDefault();
 
@@ -352,6 +416,9 @@
         }
         if(sectionId === 'dashboard'){
 
+        }
+        if(sectionId === 'appointments'){
+            fetchDoctor();
         }
     }
 
@@ -483,6 +550,8 @@
             phone: phoneInput.value,
             address: addressInput.value
         };
+
+        
         
         // After successful update, disable editing again
         editMode = false;
@@ -498,5 +567,110 @@
         document.getElementById('gender-display').style.display = 'block';
         document.getElementById('gender-edit').style.display = 'none';
     });
+
+    async function fetchDoctor(){
+        try{
+            const container = document.getElementById('doctor-list');
+            container.innerHTML = ' '
+            const response =  await fetch(`/fetch-doctor`)
+            const data = await response.json();
+            data.forEach(doctor => {
+                container.innerHTML += `
+                    <div class="default-wrapper">
+                        <div class="data-container">
+                            <div class="data-container-wrapper">
+                                <div class="name-container">
+                                    <h1>${ doctor.hospitalName }</h1>
+                                </div>
+                                <div class="company-name-container">
+                                    Doctor Name: Dr. ${ doctor.doctorName }
+                                </div>
+                                <div class="company-name-container">
+                                    Address: ${ doctor.address }
+                                </div>
+                                <div class="stock-container">
+                                    Specialization: ${ doctor.specialization }
+                                </div>
+                                <div class="dropdown-container" style="margin-top:10px; display: flex; align-items: center; justify-content: center; flex-direction: row; min-width:1100px">
+                                    <select class="custom-select" id="appointment-type">
+                                        <option value="new-patient">New Patient</option>
+                                        <option value="follow-up">Follow-Up</option>
+                                    </select>
+                                    <button class="card-btn" id="${doctor.doctorId}" onclick="requestAppointment(${doctor.doctorId})"; style="margin-left: 300px; width:30%";>Request Appointment</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            })
+
+        }catch(error){
+            showPopup('Error',error.message,'error')
+        }
+    }
+
+    function requestAppointment(doctorId){
+        appointmentType = document.getElementById('appointment-type').value;
+        try{
+            fetch(`/fetch-doctor?doctorId=${doctorId}&appointmentType=${appointmentType}`,{method:'POST'})
+            .then(response => {
+                if(response.ok || response.status === 302 || response.status === 200){
+                    showPopup('Success','Appointment booked successfully','success')
+                }
+                else{
+                    showPopup('Error','Something went wrong','error')
+                }
+            }
+            )
+        }catch(error){
+            showPopup('Error',error.message,'error')
+        }
+    }
+
+    async function doctorSearchBar(){
+        try{
+            const container = document.getElementById('doctor-list');
+            container.innerHTML = ''
+            const doctorName = document.getElementById('doctor-name').value;
+            const response = await fetch(`/fetch-doctor?doctorName=${doctorName}`,{method:"GET"});
+            const data = await response.json();
+            container.innerHTML += `<p id="search-text" style="color: var(--color-4); font-weight:600; font-size: 20px; text-align: left; margin-top: 20px;">Showing all results for <b>"${doctorName}"</b></p>`
+            if(data.length === 0){
+                container.insertAdjacentHTML('beforeend', '<div class="company-name-container" style="text-align: center; margin-top: 20px;">No medicines found.</div>');
+            }
+            data.forEach(doctor => {
+                container.innerHTML += `
+                    <div class="default-wrapper">
+                        <div class="data-container">
+                            <div class="data-container-wrapper">
+                                <div class="name-container">
+                                    <h1>${ doctor.hospitalName }</h1>
+                                </div>
+                                <div class="company-name-container">
+                                    Doctor Name: Dr. ${ doctor.doctorName }
+                                </div>
+                                <div class="company-name-container">
+                                    Address: ${ doctor.address }
+                                </div>
+                                <div class="stock-container">
+                                    Specialization: ${ doctor.specialization }
+                                </div>
+                                <div class="dropdown-container" style="margin-top:10px; display: flex; align-items: center; justify-content: center; flex-direction: row; min-width:1100px">
+                                    <select class="custom-select" id="appointment-type">
+                                        <option value="new-patient">New Patient</option>
+                                        <option value="follow-up">Follow-Up</option>
+                                    </select>
+                                    <button class="card-btn" id="${doctor.doctorId}" onclick="requestAppointment(${doctor.doctorId})"; style="margin-left: 300px; width:30%";>Request Appointment</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            })
+        }catch(error){
+            showPopup('Error',error.message,'error')
+        }
+    }
+
 </script>
 {% endblock %} 

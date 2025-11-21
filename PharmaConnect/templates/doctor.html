@@ -603,11 +603,11 @@
         <section id="appointments" class="section register-drug-section" style="min-height: 615px;">
             <h2>Appointment Management</h2>
             <div>
-                <button class="order-status status-all">All</button>
-                <button class="order-status status-delivered">Scheduled</button>
-                <button class="order-status status-pending">Pending</button>
+                <button class="order-status status-all" onclick="getAllAppointments()">All</button>
+                <button class="order-status status-delivered" onclick="getSpecificAppointments('scheduled')">Scheduled</button>
+                <button class="order-status status-pending" onclick="getSpecificAppointments('pending')">Pending</button>
             </div>
-            <div class="appointment-list">
+            <div class="appointment-list" id="appointment-list">
                 <div id="appointment-card" class="order-item" >
                     <div class="order-info"s>
                         <h3>Appointment #1</h3>
@@ -884,7 +884,11 @@
                 if(sectionId === 'my-orders'){
                     allOrders()
                 }
+                if(sectionId === 'appointments'){
+                    getAllAppointments()
+                }
             }
+
         
         window.addEventListener('DOMContentLoaded', () => {
             const hash = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
@@ -1227,6 +1231,100 @@
 
         function viewOrder(orderId,counter){
             window.location.href = `/view-order/${parseInt(orderId)}?counter=${counter}&userType=doctor`
+        }
+
+        async function getAllAppointments(){
+            const resultsContainer = document.getElementById('appointment-list')
+            resultsContainer.innerHTML = '';
+            const response = await fetch('/fetch-appointments?status=all')
+            const data = await response.json();
+            let counter = 1
+            if(data.length === 0){
+                resultsContainer.innerHTML = '<p style="text-align: center; margin-top: 20px;">No appointments found.</p>';
+                return;
+            }
+            data.forEach(appointment => {
+                if(appointment.appointmentType === 'follow-up'){
+                    disText = "Follow-up"
+                }
+                if(appointment.appointmentType === 'new-patient'){
+                    disText = "New Patient"
+                }
+                if(appointment.status === 'pending'){
+                    statusText = 'Pending' 
+                    viewText = 'pending'   
+                }
+                if(appointment.status === 'scheduled'){
+                    statusText = 'Scheduled'
+                    viewText = 'delivered'
+                }
+                appointmentHTML = `
+                    <div id="appointment-card" class="order-item" >
+                        <div class="order-info"s>
+                            <h3>Appointment #${counter}</h3>
+                            <p style="margin-top:10px">Patient Name: ${appointment.patientName}</p>
+                            <p>Type : ${disText}</p>
+                        </div>
+                        <div style="display: grid; gap:28px">
+                            <span class="order-status status-view-${viewText}">${statusText}</span>
+                            <div style="align-self: end;">
+                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId},${counter})">View Appointment</button>
+                            </div>
+                        </div>
+                    </div>
+                `
+                resultsContainer.innerHTML += appointmentHTML;
+                counter++;
+            })
+        }
+
+        async function getSpecificAppointments(status){
+            const resultsContainer = document.getElementById('appointment-list')
+            resultsContainer.innerHTML = '';
+            const response = await fetch(`/fetch-appointments?status=${status}`)
+            const data = await response.json();
+            let counter = 1
+            if(data.length === 0){
+                resultsContainer.innerHTML = '<p style="text-align: center; margin-top: 20px;">No appointments found.</p>';
+                return;
+            }
+            data.forEach(appointment => {
+                if(appointment.appointmentType === 'follow-up'){
+                    disText = "Follow-up"
+                }
+                if(appointment.appointmentType === 'new-patient'){
+                    disText = "New Patient"
+                }
+                if(appointment.status === 'pending'){
+                    statusText = 'Pending' 
+                    viewText = 'pending'   
+                }
+                if(appointment.status === 'scheduled'){
+                    statusText = 'Scheduled'
+                    viewText = 'delivered'
+                }
+                appointmentHTML = `
+                    <div id="appointment-card" class="order-item" >
+                        <div class="order-info"s>
+                            <h3>Appointment #${counter}</h3>
+                            <p style="margin-top:10px">Patient Name: ${appointment.patientName}</p>
+                            <p>Type : ${disText}</p>
+                        </div>
+                        <div style="display: grid; gap:28px">
+                            <span class="order-status status-view-${viewText}">${statusText}</span>
+                            <div style="align-self: end;">
+                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId},${counter})">View Appointment</button>
+                            </div>
+                        </div>
+                    </div>
+                `
+                resultsContainer.innerHTML += appointmentHTML;
+                counter++;
+            })
+        }
+
+        function viewAppointment(appointmentId,counter){
+            window.location.href = `/view-appointment/${parseInt(appointmentId)}?counter=${counter}`
         }
 
     </script>

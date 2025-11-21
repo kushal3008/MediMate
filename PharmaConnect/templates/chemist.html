@@ -804,9 +804,15 @@
 
             <section id="sales" class="section register-drug-section" style="min-height: 615px;">
                 <h2>Sales Report</h2>
-                <div>
-                    <button class="order-status status-all">Sales Graph</button>
-                    <button class="order-status status-all">Date Range</button>
+                <div style="display: flex; flex-direction:row; gap: 10%">
+                    <div>
+                        <button class="order-status status-all" onclick="salesGraph()">Sales Graph</button>
+                        <button class="order-status status-all">Date Range</button>
+                    </div>
+                    <div id="date-options" style="display: none;">
+                        Start Date: <input type="date" id="start-date" style="width: 30%;">
+                        End Date: <input type="date" id="end-date" style="width: 30%;">
+                    </div>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: center; gap:20px">
                     <div class="graph-container" style="display: block;" id="sales-graph">
@@ -1893,7 +1899,9 @@
 
             async function salesGraph(){
                 try{
-                    const response = await fetch('/chart-data')
+                    dateOpt = document.getElementById('date-options')
+                    dateOpt.style.display = "none";
+                    const response = await fetch('/chart-data?graph=sales')
                     if(!response.ok){
                         throw new Error(`HTTP error! status: ${response.status}`)
                     }
@@ -1905,15 +1913,76 @@
                     
                     
                     // Destroy existing chart if it exists
-                    if (window.stockChartInstance) {
-                        window.stockChartInstance.destroy();
+                    if (window.salesGraphInstance) {
+                        window.salesGraphInstance.destroy();
                     }
 
                     // Chart options
                     
 
                     // Create and store a new chart instance
-                    window.stockChartInstance = new Chart(salesGraph, {
+                    window.salesGraphInstance = new Chart(salesGraph, {
+                        type: 'line',
+                        data: salesGraphData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid : {
+                                        display: false,
+                                    },
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '₹' + value.toLocaleString();
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                    });
+
+                    
+                }catch(error){
+                    showPopup('Error', error.message, 'error');
+                }
+            }
+
+            async function dateRangeGraph(){
+                try{
+                    dateOpt = document.getElementById('date-options')
+                    dateOpt.style.display = "block";
+                    startDate = document.getElementById('start-date')
+                    endDate = document.getElementById('end-date')
+                    const response = await fetch(`/chart-data?graph=date-range&start=${startDate}&end=${endDates}`)
+                    if(!response.ok){
+                        throw new Error(`HTTP error! status: ${response.status}`)
+                    }
+                    const dateGraphData = await response.json()
+                    console.log("Date Graph Data",salesGraphData)
+
+                    const dateGraph = document.getElementById('salesGraph').getContext('2d');
+
+                    
+                    
+                    // Destroy existing chart if it exists
+                    if (window.dateGraphInstance) {
+                        window.salesGraphInstance.destroy();
+                    }
+
+                    // Chart options
+                    
+
+                    // Create and store a new chart instance
+                    window.dateGraphInstance = new Chart(dateGraph, {
                         type: 'line',
                         data: salesGraphData,
                         options: {

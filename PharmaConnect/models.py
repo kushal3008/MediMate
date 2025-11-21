@@ -124,9 +124,9 @@ class Appointments(db.Model):
 
     appointmentId = db.Column(db.Integer,primary_key=True)
     doctorId = db.Column(db.Integer,nullable = False)
-    appointmentDate = db.Column(db.Date,nullable=False)
+    appointmentDate = db.Column(db.Date)
     patientId = db.Column(db.Integer,nullable=False)
-    appointmentTime = db.Column(db.String,nullable=False)
+    appointmentTime = db.Column(db.String)
     patientType = db.Column(db.String,nullable=False)
     status = db.Column(db.String,nullable=False)
 
