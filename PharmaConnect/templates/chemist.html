@@ -807,7 +807,6 @@
                 <div style="display: flex; flex-direction:row; gap: 10%">
                     <div>
                         <button class="order-status status-all" onclick="salesGraph()">Sales Graph</button>
-                        <button class="order-status status-all">Date Range</button>
                     </div>
                     <div id="date-options" style="display: none;">
                         Start Date: <input type="date" id="start-date" style="width: 30%;">
@@ -995,7 +994,11 @@
                 // If the Out of Stock section is shown, render its data
                 if (sectionId === 'out-of-stock') {
                     fetchAndRenderOutOfStock();
-                }   
+                }
+                
+                if(sectionId === "stock-management"){
+                    stockSearchBar();
+                }
 
                 if(sectionId === 'doctor-order'){
                     fetchOrders();
@@ -1607,54 +1610,102 @@
                 }
 
 
-                if (searchInput === '') {
-                    return;
-                }
-
+                
+                
                 try {
-                    const response = await fetch(`/search-bar/${searchInput}?section=stock-management`); 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const searchData = await response.json();
-                    console.log("Data fetched from API:", searchData);
-                    const container = document.getElementById('stock-management')
-                    container.innerHTML += `<p id="search-text" style="color: var(--color-4); font-weight:600; font-size: 20px; text-align: left; margin-top: 20px;">Showing all results for <b>"${searchInput}"</b></p>`;
-
-                    if (searchData.length === 0) {
+                    if (searchInput === '') {
+                        val = " "
+                        const response = await fetch(`/search-bar/${val}?section=empty`); 
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const searchData = await response.json();
+                        console.log("Data fetched for Empty Search Bar:", searchData);
+                        const container = document.getElementById('stock-management')
+                    
+                        if (searchData.length === 0) {
                         oldResults2.forEach(div => div.remove());
                         resultsContainer.insertAdjacentHTML('beforeend', '<div class="company-name-container" style="text-align: center; margin-top: 20px;">No medicines found.</div>');
                         return;
                     }
                     
                     searchData.forEach(medicine => {
-                    const medicineHTML = `
-                        <div class="default-wrapper">
-                            <div class="data-container">
-                                <div class="data-container-wrapper">
-                                    <div class="name-container">
-                                        <h1>${ medicine.medicineName }</h1>
-                                    </div>
-                                    <div class="company-name-container">
-                                        By ${ medicine.companyName }
-                                    </div>
-                                    <div class="stock-container">
-                                        Stock: ${ medicine.stock }
-                                    </div>
-                                    <div class="price-container">
-                                        <span style="margin-top : 10px;"">₹${ medicine.medicinePrice }</span>
-                                        <div class="btn-group">
-                                            <button class="card-btn" id="${medicine.medicineId}" onclick="updateStock('${medicine.medicineName}','${medicine.medicineId}','${medicine.stock}')" style="margin-left: 682px;">Update Stock</button>
-                                            <button class="card-btn" id="${medicine.medicineId}" onclick="confirmDelete('${medicine.medicineId}', '${medicine.medicineName}')">Delete Medicine</button>
-                                        </div>  
+                        const medicineHTML = `
+                            <div class="default-wrapper">
+                                <div class="data-container">
+                                    <div class="data-container-wrapper">
+                                        <div class="name-container">
+                                            <h1>${ medicine.medicineName }</h1>
+                                        </div>
+                                        <div class="company-name-container">
+                                            By ${ medicine.companyName }
+                                        </div>
+                                        <div class="stock-container">
+                                            Stock: ${ medicine.stock }
+                                        </div>
+                                        <div class="price-container">
+                                            <span style="margin-top : 10px;"">₹${ medicine.medicinePrice }</span>
+                                            <div class="btn-group">
+                                                <button class="card-btn" id="${medicine.medicineId}" onclick="updateStock('${medicine.medicineName}','${medicine.medicineId}','${medicine.stock}')" style="margin-left: 682px;">Update Stock</button>
+                                                <button class="card-btn" id="${medicine.medicineId}" onclick="confirmDelete('${medicine.medicineId}', '${medicine.medicineName}')">Delete Medicine</button>
+                                            </div>  
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
 
-                    container.innerHTML += medicineHTML;
-                    });
+                        container.innerHTML += medicineHTML;
+                        });
+                    }
+
+                    
+                    else{
+                        const response = await fetch(`/search-bar/${searchInput}?section=stock-management`); 
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const searchData = await response.json();
+                        console.log("Data fetched for Stock Search Bar:", searchData);
+                        const container = document.getElementById('stock-management')
+                        container.innerHTML += `<p id="search-text" style="color: var(--color-4); font-weight:600; font-size: 20px; text-align: left; margin-top: 20px;">Showing all results for <b>"${searchInput}"</b></p>`;
+                        
+                        if (searchData.length === 0) {
+                        oldResults2.forEach(div => div.remove());
+                        resultsContainer.insertAdjacentHTML('beforeend', '<div class="company-name-container" style="text-align: center; margin-top: 20px;">No medicines found.</div>');
+                        return;
+                    }
+                    
+                    searchData.forEach(medicine => {
+                        const medicineHTML = `
+                            <div class="default-wrapper">
+                                <div class="data-container">
+                                    <div class="data-container-wrapper">
+                                        <div class="name-container">
+                                            <h1>${ medicine.medicineName }</h1>
+                                        </div>
+                                        <div class="company-name-container">
+                                            By ${ medicine.companyName }
+                                        </div>
+                                        <div class="stock-container">
+                                            Stock: ${ medicine.stock }
+                                        </div>
+                                        <div class="price-container">
+                                            <span style="margin-top : 10px;"">₹${ medicine.medicinePrice }</span>
+                                            <div class="btn-group">
+                                                <button class="card-btn" id="${medicine.medicineId}" onclick="updateStock('${medicine.medicineName}','${medicine.medicineId}','${medicine.stock}')" style="margin-left: 682px;">Update Stock</button>
+                                                <button class="card-btn" id="${medicine.medicineId}" onclick="confirmDelete('${medicine.medicineId}', '${medicine.medicineName}')">Delete Medicine</button>
+                                            </div>  
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        container.innerHTML += medicineHTML;
+                        });
+                    }
+
                 } catch (error) {
                     console.error("Error fetching medicines:", error);
                 }

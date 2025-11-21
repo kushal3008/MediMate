@@ -779,6 +779,16 @@ def register_routes(app,db,bcrypt):
                             "medicinePrice":i.medicinePrice,
                             "companyName":i.companyName})
             return jsonify(data)
+        elif sectionId == "empty":
+            medicine = Medicine.query.filter_by(chemistId = current_user.chemistId).all()
+            data = []
+            for i in medicine:
+                data.append({"medicineId":i.medicineId,
+                            "medicineName":i.medicineName,
+                            "stock":i.stock,
+                            "medicinePrice":i.medicinePrice,
+                            "companyName":i.companyName})
+            return jsonify(data)
         elif sectionId == "order-medicine":
             chemist = Chemist.query.filter(Chemist.address.isnot(None),Chemist.shopname.ilike(f"%{keyword}%")).all()
             doctor = Doctor.query.get(current_user.doctorId)

@@ -511,6 +511,18 @@
             margin-right: 2px;
         }
 
+        .register-drug-section {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .register-drug-section h2 {
+            color: var(--color-5);
+            margin-bottom: 20px;
+        }
+
         .open-status {
             display: inline-block;
             padding: 3px 8px;
@@ -570,14 +582,14 @@
     <main class="main-content">
         <input type="hidden" id="order-id" value="{{ appointmentId }}">
         <input type="hidden" id="counter" value="{{ counter }}">
-        <section class="section register-drug-section" style="min-height: 615px;">
+        <section class="register-drug-section" style="min-height: 615px;">
             <h2>View Appointment</h2>
             <div class="order-list" id="order-list">
                 <div class="order-item" id="order-item" style="border-bottom: none;">
                     <!-- Will be populated by JavaScript -->
                     <div id="appointment-card" class="order-item" >
                         <div class="order-info"s>
-                            <h3>Appointment #${counter}</h3>
+                            <h3>Appointment #{{ appointmentId }}</h3>
                             <p style="margin-top:10px">Patient Name: Kushal</p>
                             <p>Type : Follow-up</p>
                         </div>
@@ -617,56 +629,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-
-        // Edit Profile button logic for Doctor
-        const editBtn = document.getElementById('edit-profile-btn');
-        const profileForm = document.getElementById('profile-form');
-        const phoneInput = document.getElementById('phone');
-        const addressInput = document.getElementById('clinic-address');
-        const emailInput = document.getElementById('email');
-        const nameInput = document.getElementById('doctor-name');
-        const specializationInput = document.getElementById('specialization');
-        const updateBtn = document.getElementById('update-profile-btn');
-
-        let editMode = false;
-
-        editBtn.addEventListener('click', function() {
-            editMode = !editMode;
-            if (editMode) {
-                editBtn.textContent = 'Cancel Edit';
-                phoneInput.removeAttribute('readonly');
-                addressInput.removeAttribute('readonly');
-                nameInput.removeAttribute('readonly');
-                specializationInput.removeAttribute('readonly');
-                updateBtn.disabled = false;
-            } else {
-                editBtn.textContent = 'Edit Profile';
-                phoneInput.setAttribute('readonly', true);
-                addressInput.setAttribute('readonly', true);
-                emailInput.setAttribute('readonly', true);
-                nameInput.setAttribute('readonly', true);
-                specializationInput.setAttribute('readonly', true);
-                updateBtn.disabled = true;
-                profileForm.reset();
-            }
-        });
-
-        profileForm.addEventListener('submit', function(e) {
-            if (!editMode) {
-                e.preventDefault();
-                return false;
-            }
-            // After successful update, disable editing again
-            editMode = false;
-            editBtn.textContent = 'Edit Profile';
-            phoneInput.setAttribute('readonly', true);
-            addressInput.setAttribute('readonly', true);
-            emailInput.setAttribute('readonly', true);
-            nameInput.setAttribute('readonly', true);
-            specializationInput.setAttribute('readonly', true);
-            updateBtn.disabled = true;
-        });
-
 
         const modal = document.getElementById('my-modal');
         const modalTitle = document.getElementById('modal-title');
