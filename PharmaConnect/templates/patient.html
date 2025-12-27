@@ -208,8 +208,6 @@
     <h2>Hello, {{ current_user.patientName }}</h2>
     <nav>
         <a href="#dashboard" class="active" onclick="showSection(event, 'dashboard')">Dashboard</a>
-        <a href="#reports" onclick="showSection(event, 'reports')">View Reports</a>
-        <a href="#prescriptions" onclick="showSection(event, 'prescriptions')">View Prescriptions</a>
         <a href="#appointments" onclick="showSection(event, 'appointments')">Book Appointment</a>
         <a href="{{ url_for('chat') }}">Chat with Bot</a>
         <a href="#profile" onclick="showSection(event, 'profile')">Profile</a>
@@ -223,18 +221,6 @@
             <div class="dashboard-card">
                 <h3>Upcoming Appointments</h3>
                 <div id="patient-upcoming-appointments">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-            <div class="dashboard-card">
-                <h3>Recent Reports</h3>
-                <div id="patient-recent-reports">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-            <div class="dashboard-card">
-                <h3>Recent Prescriptions</h3>
-                <div id="patient-recent-prescriptions">
                     <!-- Populated by JS -->
                 </div>
             </div>

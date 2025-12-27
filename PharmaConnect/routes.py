@@ -1092,7 +1092,6 @@ def register_routes(app,db,bcrypt):
                         }
                     ]
                 }
-                
                 return jsonify(chart_data)
                 
             except Exception as e:
@@ -1100,34 +1099,71 @@ def register_routes(app,db,bcrypt):
         elif graph == "date-range":
             start_date = request.args.get('start')
             end_date = request.args.get('end')
+            print(start_date,end_date)
             try:
-                # Query for total sales within the date range
-                total_sales = db.session.query(
-                    func.sum(Sales.totalPrice)
+                
+                daily_sales_data = db.session.query(
+                    # Use func.date() to truncate the datetime field to just the date
+                    func.date(Sales.date).label('sale_date'), 
+                    func.sum(Sales.totalPrice).label('daily_total_sales')
                 ).filter(
                     Sales.chemistId == current_user.chemistId,
-                    Sales.date.between(start_date, end_date)
-                ).scalar() or 0
+                    # Ensure date objects are used for comparison
+                    Sales.date.between(start_date, end_date) 
+                ).group_by(
+                    'sale_date' # Group results by the date
+                ).all()
 
-                # Query for total orders within the date range
-                total_orders = db.session.query(
-                    func.sum(Orders.billAmount.cast(Integer))
+                daily_orders_data = db.session.query(
+                    func.date(Orders.orderDate).label('order_date'),
+                    func.sum(Orders.billAmount.cast(Integer)).label('daily_total_orders')
                 ).filter(
                     Orders.chemistId == current_user.chemistId,
                     Orders.orderDate.between(start_date, end_date)
-                ).scalar() or 0
+                ).group_by(
+                    'order_date'
+                ).all()
 
-                # Create the final data structure
-                report_data = {
-                    "total_sales_amount": total_sales,
-                    "total_orders_amount": total_orders,
-                    "date_range": {
-                        "start": start_date,
-                        "end": end_date
-                    }
+                sales_map = {str(date): amount for date, amount in daily_sales_data}
+                orders_map = {str(date): amount for date, amount in daily_orders_data}
+
+                all_dates = sorted(list(set(sales_map.keys()) | set(orders_map.keys())))
+
+                chart_labels = all_dates
+                combined_dataset_data = []
+
+                # Iterate through the full date range, calculating the sum for each date
+                for date_str in all_dates:
+                    # Get sales amount (defaulting to 0 if no sales on that date)
+                    sales_amount = sales_map.get(date_str, 0)
+                    
+                    # Get order amount (defaulting to 0 if no orders on that date)
+                    order_amount = orders_map.get(date_str, 0)
+                    
+                    # Calculate the combined total
+                    combined_total = sales_amount + order_amount
+                    
+                    # Add the combined total to the dataset
+                    combined_dataset_data.append(combined_total)
+
+                # --- Final Chart.js Data Structure ---
+                dateGraphData = {
+                    'labels': chart_labels,
+                    'datasets': [
+                        {
+                            'label': f"Combined Daily Revenue from {start_date} to {end_date}",
+                            'data': combined_dataset_data,
+                            "borderColor": "#42007f",
+                            "backgroundColor": "rgba(66, 0, 127, 0.2)", 
+                            'tension': 0.1,
+                            'fill': True  # Optional: Prevents filling under the line
+                        }
+                    ]
                 }
 
-                return jsonify(report_data)
+                return jsonify(dateGraphData)
+
+                # Now you can return this 'dateGraphData' dictionary to your frontend.
 
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
@@ -1181,7 +1217,7 @@ def register_routes(app,db,bcrypt):
                 patient = Patient.query.filter_by(patientId=i.patientId).first()
                 appointmentList.append({'appointmentId':i.appointmentId,'patientName':patient.patientName,'appointmentType':i.patientType,'status':i.status})
             return jsonify(appointmentList)
-        elif status == "pending" or status == "scheduled":
+        elif status == "pending" or status == "scheduled" or status == "cancelled"  :
             appointments = Appointments.query.filter_by(doctorId=current_user.doctorId,status=status).all()
             appointmentList = []
             for i in appointments:
@@ -1189,16 +1225,43 @@ def register_routes(app,db,bcrypt):
                 appointmentList.append({'appointmentId':i.appointmentId,'patientName':patient.patientName,'appointmentType':i.patientType,'status':i.status})
             return jsonify(appointmentList)
         
-    @app.route('/view-appointment/<int:appointmentId>')
+    @app.route('/view-appointment/<int:appointmentId>',methods=['GET','POST'])
     @login_required
     def viewAppointment(appointmentId):
-        return render_template('view_appointment.html',appointmentId=appointmentId)
+        if request.method == "GET":
+            return render_template('view_appointment.html',appointmentId=appointmentId)
+        
+    @app.route('/accept-appointment/<int:appointmentId>',methods=['POST'])
+    @login_required
+    def acceptAppointment(appointmentId):
+        appointment = Appointments.query.filter_by(appointmentId=appointmentId).first()
+        if appointment:
+            appointment.status = "scheduled"
+            db.session.commit()
+        return {"status": "success"}, 200
+    
+    @app.route('/decline-appointment/<int:appointmentId>',methods=['POST'])
+    @login_required
+    def declineAppointment(appointmentId):
+        appointment = Appointments.query.filter_by(appointmentId=appointmentId).first()
+        if appointment:
+            appointment.status = "declined"
+            db.session.commit()
+        return redirect('/doctor#appointments')
 
+    @app.route('/fetch-patient-details/<int:appointmentId>')
+    @login_required
+    def fetchPatientDetails(appointmentId):
+        if request.method == "GET":   
+            appointment = Appointments.query.filter_by(appointmentId=appointmentId).first()
+            patient = Patient.query.filter_by(patientId=appointment.patientId).first()
+            data = {"patientName":patient.patientName,"patientEmail":patient.patientEmail,"contactNo":patient.contactNumber,"address":patient.address,"gender":patient.gender,"type":appointment.patientType,"status":appointment.status}
+            return jsonify(data)
+        
     @app.route('/update-database')
     def update_database():
-        # order = Orders.query.filter_by(orderId = 1).first()
-        # if order:
-        #     order.status = "delivered"
-        #     db.session.commit()
+        # appo = Appointments.query.filter_by(appointmentId = 1).first()
+        # appo.status = "scheduled"
+        # db.session.commit()
         return "DOne"
 

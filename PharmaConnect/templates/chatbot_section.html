@@ -142,8 +142,6 @@
     <h2>Hello, {{ current_user.patientName }}</h2>
     <nav>
         <a href="{{ url_for('patient')}}">Dashboard</a>
-        <a href="{{ url_for('patient',_anchor='reports')}}">View Reports</a>
-        <a href="{{ url_for('patient',_anchor='prescriptions')}}">View Prescriptions</a>
         <a href="{{ url_for('patient',_anchor='appointments')}}">Book Appointment</a>
         <a href="{{ url_for('chat') }}" class="active">Chat with Bot</a>
         <a href="{{ url_for('patient',_anchor='profile')}}">Profile</a>

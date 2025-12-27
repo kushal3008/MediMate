@@ -551,7 +551,8 @@
         border-radius: 5px;
         font-size: 1rem;
         box-sizing: border-box;
-    }
+        }
+        
 
     </style>
 <body>
@@ -559,7 +560,6 @@
         <h2>Hello, {{ current_user.doctorName }}</h2>
         <nav>
             <a href="#dashboard"  onclick="showSection(event, 'dashboard')">Dashboard</a>
-            <a href="#patients" onclick="showSection(event, 'patients')">Patients</a>
             <a href="#appointments" onclick="showSection(event, 'appointments')">Appointments</a>
             <a href="#order-medicine" onclick="showSection(event, 'order-medicine')">Order Medicine</a>
             <a href="#my-orders" onclick="showSection(event, 'my-orders')">My Orders</a>
@@ -568,6 +568,40 @@
         </nav>
     </aside>
     <main class="main-content">
+        <div id="accept-message" 
+            style="display: none; 
+                    position: fixed; 
+                    left: 60%;
+                    bottom: 10%; 
+                    transform: translateX(-50%); 
+                    background: #28a745; 
+                    color: white; 
+                    width: 200px; 
+                    height: 50px; 
+                    line-height: 50px; /* Centers text vertically */
+                    text-align: center; 
+                    border-radius: 8px; 
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                    z-index: 9999;">
+            Appointment Accepted
+        </div>
+        <div id="declined-message" 
+            style="display: none; 
+                    position: fixed; 
+                    left: 60%;
+                    bottom: 10%; 
+                    transform: translateX(-50%); 
+                    background: #ff002b; 
+                    color: white; 
+                    width: 200px; 
+                    height: 50px; 
+                    line-height: 50px; /* Centers text vertically */
+                    text-align: center; 
+                    border-radius: 8px; 
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+                    z-index: 9999;">
+            Appointment Declined
+        </div>
         <!-- Dashboard Section -->
         <section id="dashboard" class="section">
             <h2>Dashboard</h2>
@@ -587,18 +621,6 @@
             </div>
         </section>
 
-        <!-- Patients Section -->
-        <section id="patients" class="section">
-            <h2>Patient Management</h2>
-            <div class="search-bar">
-                <input type="text" id="patientSearch" placeholder="Search patients...">
-                <button class="btn" onclick="addNewPatient()">Add New Patient</button>
-            </div>
-            <div class="patient-list" id="patientsList">
-                <!-- Patient cards will be populated here -->
-            </div>
-        </section>
-
         <!-- Appointments Section -->
         <section id="appointments" class="section register-drug-section" style="min-height: 615px;">
             <h2>Appointment Management</h2>
@@ -606,6 +628,7 @@
                 <button class="order-status status-all" onclick="getAllAppointments()">All</button>
                 <button class="order-status status-delivered" onclick="getSpecificAppointments('scheduled')">Scheduled</button>
                 <button class="order-status status-pending" onclick="getSpecificAppointments('pending')">Pending</button>
+                <button class="order-status status-cancelled" onclick="getSpecificAppointments('cancelled')">Cancelled</button>
             </div>
             <div class="appointment-list" id="appointment-list">
                 <div id="appointment-card" class="order-item" >
@@ -739,6 +762,38 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+
+        window.onload = function() {
+               // Check if the flag exists in session storage
+            if (sessionStorage.getItem('accept_appointment_msg') === 'true') {
+                const messageDiv = document.getElementById('accept-message');
+                
+                // Show the message
+                messageDiv.style.display = 'block';
+
+                // Hide it after 1 second
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                    // IMPORTANT: Remove the flag so it doesn't show again on refresh
+                    sessionStorage.removeItem('accept_appointment_msg');
+                }, 3000);
+            }
+
+            if (sessionStorage.getItem('decline_appointment_msg') === 'true') {
+                const messageDiv = document.getElementById('declined-message');
+                
+                // Show the message
+                messageDiv.style.display = 'block';
+
+                // Hide it after 1 second
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                    // IMPORTANT: Remove the flag so it doesn't show again on refresh
+                    sessionStorage.removeItem('decline_appointment_msg');
+                }, 3000);
+            }
+        }
+
         function initializeDashboard() {
             // Initialize appointments chart
             const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');
@@ -1268,7 +1323,7 @@
                         <div style="display: grid; gap:28px">
                             <span class="order-status status-view-${viewText}">${statusText}</span>
                             <div style="align-self: end;">
-                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId},${counter})">View Appointment</button>
+                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId})">View Appointment</button>
                             </div>
                         </div>
                     </div>
@@ -1303,6 +1358,10 @@
                     statusText = 'Scheduled'
                     viewText = 'delivered'
                 }
+                if (appointment.status === 'cancelled'){
+                    statusText = 'Cancelled'
+                    viewText = 'cancelled'
+                }
                 appointmentHTML = `
                     <div id="appointment-card" class="order-item" >
                         <div class="order-info"s>
@@ -1313,7 +1372,7 @@
                         <div style="display: grid; gap:28px">
                             <span class="order-status status-view-${viewText}">${statusText}</span>
                             <div style="align-self: end;">
-                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId},${counter})">View Appointment</button>
+                                <button class="order-status status-all" onclick="viewAppointment(${appointment.appointmentId})">View Appointment</button>
                             </div>
                         </div>
                     </div>
@@ -1323,8 +1382,8 @@
             })
         }
 
-        function viewAppointment(appointmentId,counter){
-            window.location.href = `/view-appointment/${parseInt(appointmentId)}?counter=${counter}`
+        function viewAppointment(appointmentId){
+            window.location.href = `/view-appointment/${parseInt(appointmentId)}`
         }
 
     </script>

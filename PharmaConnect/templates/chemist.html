@@ -152,13 +152,13 @@
             
             #register-drug-form .submit-btn {
                 width: 100%;
-                padding: 12px;
                 background: linear-gradient(to bottom, var(--color-4), var(--color-5));
                 color: white;
                 border: none;
                 border-radius: 5px;
                 font-size: 16px;
                 font-weight: 600;
+                padding: 12px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 box-shadow: 0 4px 15px rgba(0, 0, 0, 0.10);
@@ -804,20 +804,27 @@
 
             <section id="sales" class="section register-drug-section" style="min-height: 615px;">
                 <h2>Sales Report</h2>
-                <div style="display: flex; flex-direction:row; gap: 10%">
-                    <div>
-                        <button class="order-status status-all" onclick="salesGraph()">Sales Graph</button>
+                <!-- <div style="display: flex; flex-direction:row; gap: 10%"> -->
+                <div style="display: flex; flex-direction:row; gap: 200px;">
+                    <div style="display: flex; flex-direction:column; gap: 10px">
+                        <div>
+                            <button class="order-status status-all" onclick="salesGraph()">Sales Graph</button>
+                            <button class="order-status status-all" onclick="dateRangeLoad()" style="margin-left:5px;" >Date Range</button>
+                        </div>
+                        <div id="date-options" style="display: none; flex-direction:column; margin-top:50px; ">
+                            Start Date: <input type="date" id="start-date" style="width: 75%; margin-bottom:10px">
+                            End Date: <input type="date" id="end-date" style="width: 75%; margin-bottom:20px;">
+                            <button class="submit-btn" style="width: 75%;" onclick="dateRangeGraph()">Generate</button>
+                        </div>
                     </div>
-                    <div id="date-options" style="display: none;">
-                        Start Date: <input type="date" id="start-date" style="width: 30%;">
-                        End Date: <input type="date" id="end-date" style="width: 30%;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap:20px;">
+                        <div class="graph-container" style="display: block;" id="sales-graph">
+                            <canvas id="salesGraph"></canvas>
+                        </div>
+                        <div class="graph-container" style="display: none;" id="date-graph">
+                            <canvas id="dateGraph"></canvas>
+                        </div>
                     </div>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: center; gap:20px">
-                    <div class="graph-container" style="display: block;" id="sales-graph">
-                        <canvas id="salesGraph"></canvas>
-                    </div>
-                    <div class="graph-container" style="display: none;" id="date-graph"></div>
                 </div>
             </section>
 
@@ -1374,7 +1381,7 @@
                             outOfStockList.appendChild(itemElement);
                         });
                     } else {
-                        outOfStockList.innerHTML = "<p>All medicines have stock.</p>";
+                        outOfStockList.innerHTML = "<p>All medicines are in stock.</p>";
                     }
 
                 } catch (error) {
@@ -1803,17 +1810,18 @@
                     });
             }
 
+            
             function reloadStockPage(){
                 const resultsContainer = document.getElementById('stock-management');
                 resultsContainer.innerHTML = '';
                 try{
                     const container = document.getElementById('stock-management')
                     const baseHTML = `
-                        <h2>Stock Management</h2>
-                        <div class="input-group">
-                            <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
-                            <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
-                        </div>
+                    <h2>Stock Management</h2>
+                    <div class="input-group">
+                        <input type="text" id="search-bar-stock-management" style="width:89%" placeholder="Search medicines..." required>
+                        <button class="card-btn" style="width: 10%; margin-right: 0px; margin-left: 6x;" onclick="stockSearchBar()">Search</button>
+                    </div>
                     `
                     container.innerHTML += baseHTML;
                     hidePopup()
@@ -1821,27 +1829,27 @@
                     showPopup('Error', `An error occurred: ${error.message}`, 'error');
                 }
             }
-
+            
             async function fetchOrders(){
                 const resultsContainer = document.getElementById('order-list')
                 resultsContainer.innerHTML = '';
                 const container = document.getElementById('order-list');
-
+                
                 try{
                     const response = await fetch('/get-orders?userType=chemist&status=all')                
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
-
+                    
                     if (data.length === 0) {
                         container.innerHTML = '<p style="text-align: center; margin-top: 20px;">No orders found.</p>';
                         return;
                     }
-
+                    
                     let counter = 1
                     let statusText = ''
-
+                    
                     data.forEach(order => {
                         if(order.status === 'pending'){
                             statusText = 'Pending'
@@ -1853,6 +1861,70 @@
                             statusText = 'Cancelled'
                         }
                         const orderCard = `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <h4>Order #${counter}</h4>
+                                <p>Name: Dr. ${order.doctorName}</p>
+                                    <p>Delivery Address: ${order.address}</p>
+                                    <p>Bill Amount: ₹${order.billAmount}</p>
+                                    <p>Order ID: ${order.orderId}</p>
+                                    <p>Order Date: ${order.orderDate}</p>
+                                </div>
+                                <div style="display:grid; gap: 68px;">
+                                    <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
+                                    <div style="align-self: end;"> 
+                                        <button class="order-status status-all" onclick="viewOrders(${order.orderId},${counter})">View Order</button>
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                            container.innerHTML += orderCard;
+                            counter++;
+                        });
+                        
+                    } catch (error) {
+                        showPopup('Error', error.message, 'error');
+                    }
+                }
+                
+                async function fetchSpecificOrders(status){
+                    let statusText = ''
+                    let messageText = ''
+                    if (status === "pending"){
+                        statusText = "Pending"
+                        messageText = "No pending orders found."
+                    }            
+                    else if (status === "delivered"){
+                        statusText = "Delivered"
+                        messageText = "No delivered orders found."
+                    }
+                    else if (status === "cancelled"){
+                        statusText = "Cancelled"
+                        messageText = "No cancelled orders found."
+                    }
+                    
+                    const resultsContainer = document.getElementById('order-list')
+                    resultsContainer.innerHTML = '';
+                    const container = document.getElementById('order-list');
+                    
+                    try{
+                        const response = await fetch(`/get-orders?userType=chemist&status=${status}`)                
+                        if (!response.ok) {
+                            showPopup('Error', response.status, 'error');
+                    }
+                    const data = await response.json();
+                    
+                    if (data.length === 0) {
+                        container.innerHTML = `<p style="text-align: center; margin-top: 20px;">${messageText}</p>`;
+                        return;
+                    }
+                    
+                    if (data.message){
+                        showPopup('Error', data.message, 'error');
+                    }else{
+                        let counter = 1
+                        data.forEach(order => {
+                            const orderCard = `
                             <div class="order-item">
                                 <div class="order-info">
                                     <h4>Order #${counter}</h4>
@@ -1869,108 +1941,48 @@
                                     </div>
                                 </div>
                             </div>
-                        `;
-                        container.innerHTML += orderCard;
-                        counter++;
-                    });
-
-                } catch (error) {
-                    showPopup('Error', error.message, 'error');
-                }
-            }
-
-            async function fetchSpecificOrders(status){
-                let statusText = ''
-                let messageText = ''
-                if (status === "pending"){
-                    statusText = "Pending"
-                    messageText = "No pending orders found."
-                }            
-                else if (status === "delivered"){
-                    statusText = "Delivered"
-                    messageText = "No delivered orders found."
-                }
-                else if (status === "cancelled"){
-                    statusText = "Cancelled"
-                    messageText = "No cancelled orders found."
-                }
-
-                const resultsContainer = document.getElementById('order-list')
-                resultsContainer.innerHTML = '';
-                const container = document.getElementById('order-list');
-
-                try{
-                    const response = await fetch(`/get-orders?userType=chemist&status=${status}`)                
-                    if (!response.ok) {
-                        showPopup('Error', response.status, 'error');
-                    }
-                    const data = await response.json();
-
-                    if (data.length === 0) {
-                        container.innerHTML = `<p style="text-align: center; margin-top: 20px;">${messageText}</p>`;
-                        return;
-                    }
-
-                    if (data.message){
-                        showPopup('Error', data.message, 'error');
-                    }else{
-                        let counter = 1
-                        data.forEach(order => {
-                            const orderCard = `
-                                <div class="order-item">
-                                    <div class="order-info">
-                                        <h4>Order #${counter}</h4>
-                                        <p>Name: Dr. ${order.doctorName}</p>
-                                        <p>Delivery Address: ${order.address}</p>
-                                        <p>Bill Amount: ₹${order.billAmount}</p>
-                                        <p>Order ID: ${order.orderId}</p>
-                                        <p>Order Date: ${order.orderDate}</p>
-                                    </div>
-                                    <div style="display:grid; gap: 68px;">
-                                        <span class="order-status status-view-${order.status.toLowerCase().replace(' ', '-')}">${statusText}</span>
-                                        <div style="align-self: end;"> 
-                                            <button class="order-status status-all" onclick="viewOrders(${order.orderId},${counter})">View Order</button>
-                                        </div>
-                                    </div>
-                                </div>
                             `;
                             container.innerHTML += orderCard;
                             counter++;
                         });
                     }
-
+                    
                 } catch (error) {
                     showPopup('Error', error.message, 'error');
                 }
             }
-
+            
             function viewOrders(orderId,counter){
                 window.location.href = `/view-order/${parseInt(orderId)}?counter=${counter}&userType=chemist`
             }
-
+            
             async function salesGraph(){
                 try{
                     dateOpt = document.getElementById('date-options')
                     dateOpt.style.display = "none";
+                    salesGraphContent = document.getElementById('sales-graph')
+                    dateGraph = document.getElementById('date-graph')
+                    salesGraphContent.style.display= "block"
+                    dateGraph.style.display= "none"
                     const response = await fetch('/chart-data?graph=sales')
                     if(!response.ok){
                         throw new Error(`HTTP error! status: ${response.status}`)
                     }
                     const salesGraphData = await response.json()
                     console.log("Sales Graph Data",salesGraphData)
-
+                    
                     const salesGraph = document.getElementById('salesGraph').getContext('2d');
-
+                    
                     
                     
                     // Destroy existing chart if it exists
                     if (window.salesGraphInstance) {
                         window.salesGraphInstance.destroy();
                     }
-
+                    
                     // Chart options
                     
-
+                    
                     // Create and store a new chart instance
                     window.salesGraphInstance = new Chart(salesGraph, {
                         type: 'line',
@@ -2000,42 +2012,53 @@
                             }
                         },
                     });
-
+                    
                     
                 }catch(error){
                     showPopup('Error', error.message, 'error');
                 }
             }
 
+            function dateRangeLoad(){
+                dateOpt = document.getElementById('date-options')
+                dateOpt.style.display = "flex";
+                salesGraphContent = document.getElementById('sales-graph')
+                dateGraph = document.getElementById('date-graph')
+                salesGraphContent.style.display= "none"
+                dateGraph.style.display= "block"
+            }
+            
             async function dateRangeGraph(){
                 try{
-                    dateOpt = document.getElementById('date-options')
-                    dateOpt.style.display = "block";
-                    startDate = document.getElementById('start-date')
-                    endDate = document.getElementById('end-date')
-                    const response = await fetch(`/chart-data?graph=date-range&start=${startDate}&end=${endDates}`)
+                    startDate = document.getElementById('start-date').value
+                    endDate = document.getElementById('end-date').value
+                    console.log(startDate,endDate)
+                    const response = await fetch(`/chart-data?graph=date-range&start=${startDate}&end=${endDate}`)
                     if(!response.ok){
                         throw new Error(`HTTP error! status: ${response.status}`)
-                    }
+                    } 
                     const dateGraphData = await response.json()
-                    console.log("Date Graph Data",salesGraphData)
-
-                    const dateGraph = document.getElementById('salesGraph').getContext('2d');
-
+                    console.log("Date Graph Data",dateGraphData)
+                    
+                    const dateGraph = document.getElementById('dateGraph').getContext('2d');
+                    
                     
                     
                     // Destroy existing chart if it exists
-                    if (window.dateGraphInstance) {
+                    if (window.salesGraphInstance) {
                         window.salesGraphInstance.destroy();
+                        if (window.dateGraphInstance) {
+                            window.dateGraphInstance.destroy();
+                        }
                     }
-
+                    
                     // Chart options
                     
-
+                    
                     // Create and store a new chart instance
                     window.dateGraphInstance = new Chart(dateGraph, {
                         type: 'line',
-                        data: salesGraphData,
+                        data: dateGraphData,
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
@@ -2061,12 +2084,13 @@
                             }
                         },
                     });
-
+                    
                     
                 }catch(error){
                     showPopup('Error', error.message, 'error');
                 }
             }
-
+            
         </script>
-    {% endblock %}
+        {% endblock %}
+        

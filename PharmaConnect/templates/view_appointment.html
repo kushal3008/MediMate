@@ -571,7 +571,6 @@
         <h2>Hello, {{ current_user.doctorName }}</h2>
         <nav>
             <a href="/doctor#dashboard"  onclick="showSection(event, 'dashboard')">Dashboard</a>
-            <a href="/doctor#patients" onclick="showSection(event, 'patients')">Patients</a>
             <a href="/doctor#appointments" class="active" onclick="showSection(event, 'appointments')">Appointments</a>
             <a href="/doctor#order-medicine" onclick="showSection(event, 'order-medicine')">Order Medicine</a>
             <a href="/doctor#my-orders" onclick="showSection(event, 'my-orders')">My Orders</a>
@@ -580,101 +579,104 @@
         </nav>
     </aside>
     <main class="main-content">
-        <input type="hidden" id="order-id" value="{{ appointmentId }}">
+        <input type="hidden" id="appointment-id" value="{{ appointmentId }}">
         <input type="hidden" id="counter" value="{{ counter }}">
         <section class="register-drug-section" style="min-height: 615px;">
-            <h2>View Appointment</h2>
+            <h2>Appointment Details</h2>
             <div class="order-list" id="order-list">
-                <div class="order-item" id="order-item" style="border-bottom: none;">
+                <div class="order-item" id="appointment-card" style="border-bottom: none;">
                     <!-- Will be populated by JavaScript -->
-                    <div id="appointment-card" class="order-item" >
-                        <div class="order-info"s>
-                            <h3>Appointment #{{ appointmentId }}</h3>
-                            <p style="margin-top:10px">Patient Name: Kushal</p>
-                            <p>Type : Follow-up</p>
-                        </div>
-                        <div style="display: grid; gap:28px">
-                            <span class="order-status status-view-pending">Pending</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>
 
-    <!-- Modal Structure -->
-
-    <div id="my-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title"></h2>
-            </div>
-            <div class="modal-body">
-                <p id="modal-message"></p>
-            </div>
-            <div class="modal-footer">
-                
-            </div>
-        </div>
-    </div>
-
     <!-- Hidden flash messages container -->
-    <div id="flash-messages-container" style="display: none;">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message" data-category="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-
-        const modal = document.getElementById('my-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalContent = document.getElementById('my-modal').querySelector('.modal-content');
-        const modalFooter = document.getElementById('my-modal').querySelector('.modal-footer');
-
-            function showPopup(title, message, type = 'info', buttons = []) {
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                modalContent.classList.remove('success', 'error', 'info', 'loading');
-                modalContent.classList.add(type);
-                modalFooter.innerHTML = '';
-            
-                if (buttons.length > 0) {
-                    buttons.forEach(btnConfig => {
-                        const buttonElement = document.createElement('button');
-                        buttonElement.textContent = btnConfig.text;
-                        buttonElement.className = btnConfig.className;
-                        buttonElement.setAttribute('onclick', btnConfig.onclick);
-                        modalFooter.appendChild(buttonElement);
-                    });
-                } else {
-                    const buttonElement = document.createElement('button');
-                    buttonElement.textContent = 'OK';
-                    buttonElement.className = 'card-btn';
-                    buttonElement.setAttribute('onclick', 'hidePopup()');
-                    modalFooter.appendChild(buttonElement);
+        loadAppointment();
+        async function loadAppointment(){
+            const resultsContainer = document.getElementById("appointment-card");
+            const appointmentId = document.getElementById("appointment-id").value;
+            const response = await fetch(`/fetch-patient-details/${appointmentId}`);
+            resultsContainer.innerHTML = '';  
+            if(response.ok){
+                const appointment = await response.json();
+                console.log(appointment);
+                if(appointment.status === 'pending'){
+                    resultsContainer.innerHTML += `
+                    <div id="appointment-card" class="order-item" style="border: none; display:flex; flex-direction:column; gap:20px; align-items:flex-start">
+                        <div class="order-info">
+                            <p style="font-size: 18px;"><b>Appointment ID :${appointmentId}</b></p>
+                            <p style="font-size: 18px"><b>Patient Name</b>: ${appointment.patientName}</p>
+                            <p style="font-size: 18px"><b>Contact Number</b>: ${appointment.contactNo}</p>
+                            <p style="font-size: 18px;"><b>Email</b> : ${appointment.patientEmail}}</p>
+                            <p style="font-size: 18px;"><b>Address</b> : ${appointment.address}</p>
+                            <p style="font-size: 18px;"><b>Gender</b> : ${appointment.gender}</p>
+                            <p style="font-size: 18px;"><b>Type</b> : ${appointment.type}</p>
+                            <p style="font-size: 18px;"><b>Status</b> : Pending</p>
+                        </div>
+                        <div>
+                            <button class="order-status status-delivered" onclick="acceptAppointment()" style="margin-right: 10px; width:125px; height:40px; font-size:medium">Accept</button>
+                            <button class="order-status status-cancelled" onclick="declineAppointment()" style="width:125px; height:40px; font-size:medium">Decline</button>
+                        </div>
+                    </div>
+                `;
+                } 
+                else if (appointment.status === 'scheduled' ){
+                    resultsContainer.innerHTML += `
+                    <div id="appointment-card" class="order-item" style="border: none; display:flex; flex-direction:column; gap:20px; align-items:flex-start">
+                        <div class="order-info">
+                            <p style="font-size: 18px;"><b>Appointment ID :${appointmentId}</b></p>
+                            <p style="font-size: 18px"><b>Patient Name</b>: ${appointment.patientName}</p>
+                            <p style="font-size: 18px"><b>Contact Number</b>: ${appointment.contactNo}</p>
+                            <p style="font-size: 18px;"><b>Email</b> : ${appointment.patientEmail}}</p>
+                            <p style="font-size: 18px;"><b>Address</b> : ${appointment.address}</p>
+                            <p style="font-size: 18px;"><b>Gender</b> : ${appointment.gender}</p>
+                            <p style="font-size: 18px;"><b>Type</b> : ${appointment.type}</p>
+                            <p style="font-size: 18px;"><b>Status</b> : Scheduled</p>
+                        </div>
+                    </div>
+                `;
+                } 
+                else if (appointment.status === 'cancelled'){
+                    resultsContainer.innerHTML += `
+                    <div id="appointment-card" class="order-item" style="border: none; display:flex; flex-direction:column; gap:20px; align-items:flex-start">
+                        <div class="order-info">
+                            <p style="font-size: 18px;"><b>Appointment ID :${appointmentId}</b></p>
+                            <p style="font-size: 18px"><b>Patient Name</b>: ${appointment.patientName}</p>
+                            <p style="font-size: 18px"><b>Contact Number</b>: ${appointment.contactNo}</p>
+                            <p style="font-size: 18px;"><b>Email</b> : ${appointment.patientEmail}}</p>
+                            <p style="font-size: 18px;"><b>Address</b> : ${appointment.address}</p>
+                            <p style="font-size: 18px;"><b>Gender</b> : ${appointment.gender}</p>
+                            <p style="font-size: 18px;"><b>Type</b> : ${appointment.type}</p>
+                            <p style="font-size: 18px;"><b>Status</b> : Cancelled</p>
+                        </div>
+                    </div>
+                `;
                 }
-            
-                modal.style.display = 'flex';
+                
+            } else {
+                console.error('Failed to fetch appointment details');
             }
+        }
 
-            function showInfoPopup(title, message, type = 'info') {
-                const buttons = [{ text: 'OK', className: 'card-btn', onclick: 'hidePopup()' }];
-                showPopup(title, message, type, buttons);
+        async function acceptAppointment() {
+            const appointmentId = document.getElementById('appointment-id').value;
+            const response = await fetch(`/accept-appointment/${appointmentId}`,{method:"POST"});
+            if(response.ok){
+                sessionStorage.setItem('accept_appointment_msg','true');
             }
-            
-            /**
-            * Hides the custom popup.
-            */
-            function hidePopup() {
-                modal.style.display = 'none';
+            window.location.href = "/doctor#appointments";
+        }
+
+        async function declineAppointment() {
+            const appointmentId = document.getElementById('appointment-id').value;
+            const response = await fetch(`/decline-appointment/${appointmentId}`,{method:"POST"});
+            if(response.ok){
+                sessionStorage.setItem('decline_appointment_msg','true');
             }
+            window.location.href = "/doctor#appointments";
+        }
 
-
-        
+    
     </script>
 {% endblock %}
